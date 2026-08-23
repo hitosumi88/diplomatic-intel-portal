@@ -69,6 +69,10 @@
   a.rowlink .arrow{color:var(--brass);font-family:'JetBrains Mono',monospace;}
   a.rowlink.search-tool{border-left:3px solid #e0b98f;}
   .sidegap{height:8px;flex:0 0 auto;}
+  .newssearch{display:flex;gap:6px;margin-bottom:8px;}
+  .newssearch input{flex:1;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;color:var(--parchment);padding:5px 8px;font-size:.78rem;font-family:'Noto Sans JP',sans-serif;}
+  .newssearch button{background:var(--stamp-red);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:.78rem;cursor:pointer;font-weight:700;}
+  .newssearch .reset{background:var(--navy-700);}
   details{background:var(--navy-800);border:1px solid var(--navy-700);border-radius:4px;padding:6px 10px;margin-bottom:5px;}
   details summary{cursor:pointer;font-size:.78rem;font-weight:700;color:var(--parchment);list-style:none;}
   details summary::-webkit-details-marker{display:none;}
@@ -179,19 +183,22 @@
   <div class="panel">
     <div class="panel-head">情勢 ・ 用語 ・ 規則</div>
     <div class="panel-body">
-      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📰 リアルタイム情勢(直リンク)</div>
-      <div class="linklist">
-        <a class="rowlink" href="https://www3.nhk.or.jp/news/world.html" target="_blank" rel="noopener">NHK NEWS WEB 国際 <span class="arrow">→</span></a>
-        <a class="rowlink" href="https://jp.reuters.com/world/asia-pacific/" target="_blank" rel="noopener">ロイター アジア太平洋 <span class="arrow">→</span></a>
-        <a class="rowlink" href="https://www.asahi.com/international/" target="_blank" rel="noopener">朝日新聞デジタル 国際 <span class="arrow">→</span></a>
+      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📰 リアルタイム情勢(8ソース横断検索)</div>
+      <div class="newssearch">
+        <input type="text" id="newsKeyword" placeholder="キーワード(例:関税 中国)">
+        <button onclick="searchNews()">検索</button>
+      </div>
+      <div class="linklist" id="newsLinklist">
+        <a class="rowlink" href="https://jp.reuters.com/world/asia-pacific/" target="_blank" rel="noopener">ロイター <span class="arrow">→</span></a>
+        <a class="rowlink" href="https://www.bbc.com/news/world" target="_blank" rel="noopener">BBC News(英語) <span class="arrow">→</span></a>
+        <a class="rowlink" href="https://www.mofa.go.jp/mofaj/press/index.html" target="_blank" rel="noopener">外務省(報道発表・声明等) <span class="arrow">→</span></a>
       </div>
       <div class="sidegap"></div>
       <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📖 ファクト検索(AI回避)</div>
       <div class="linklist">
         <a class="rowlink" href="https://kotobank.jp/" target="_blank" rel="noopener">コトバンク(辞書横断) <span class="arrow">→</span></a>
         <a class="rowlink" href="https://www.weblio.jp/" target="_blank" rel="noopener">Weblio 辞書 <span class="arrow">→</span></a>
-        <a class="rowlink search-tool" href="https://www.google.com/search?udm=14" target="_blank" rel="noopener">Google「Web」検索(AI概要なし) <span class="arrow">→</span></a>
-        <a class="rowlink search-tool" href="https://noai.duckduckgo.com/" target="_blank" rel="noopener">DuckDuckGo No AI <span class="arrow">→</span></a>
+        <a class="rowlink search-tool" href="https://ja.wikipedia.org/" target="_blank" rel="noopener">Wikipedia日本語版(要検証) <span class="arrow">→</span></a>
       </div>
       <div class="sidegap"></div>
       <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📜 交渉カード(共通)</div>
@@ -506,6 +513,41 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
   });
+});
+
+
+/* ===== 3ソース横断検索(各サイト公式の検索機能に直接接続) ===== */
+const NEWS_SOURCES = [
+  {name:"ロイター", top:"https://jp.reuters.com/world/asia-pacific/",
+    search:(kw)=>`https://www.reuters.com/site-search/?query=${encodeURIComponent(kw)}`},
+  {name:"BBC News(英語)", top:"https://www.bbc.com/news/world",
+    search:(kw)=>`https://www.bbc.co.uk/search?q=${encodeURIComponent(kw)}`},
+  {name:"外務省(報道発表・声明等)", top:"https://www.mofa.go.jp/mofaj/press/index.html",
+    search:(kw)=>`https://www.mofa.go.jp/mofaj/searchresult.html?q=${encodeURIComponent(kw)}`},
+];
+function renderNewsList(keyword){
+  const list = document.getElementById('newsLinklist');
+  list.innerHTML = '';
+  NEWS_SOURCES.forEach(src=>{
+    const a = document.createElement('a');
+    a.className = 'rowlink';
+    a.target = '_blank'; a.rel = 'noopener';
+    if(keyword){
+      a.href = src.search(keyword);
+      a.innerHTML = `${src.name}で「${keyword}」を検索 <span class="arrow">→</span>`;
+    } else {
+      a.href = src.top;
+      a.innerHTML = `${src.name} <span class="arrow">→</span>`;
+    }
+    list.appendChild(a);
+  });
+}
+function searchNews(){
+  const kw = document.getElementById('newsKeyword').value.trim();
+  renderNewsList(kw);
+}
+document.getElementById('newsKeyword').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') searchNews();
 });
 
 render();
