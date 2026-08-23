@@ -152,13 +152,16 @@
   <div class="panel">
     <div class="tabs">
       <button class="tab-btn active" data-tab="earth">🗺️<br>地図・地形</button>
-      <button class="tab-btn" data-tab="climate">🌾<br>気候・農産物</button>
+      <button class="tab-btn" data-tab="climate">🌾<br>気候・産業</button>
       <button class="tab-btn" data-tab="trade">📊<br>貿易統計</button>
       <button class="tab-btn" data-tab="tariff">⚠️<br>関税・渡航リスク</button>
     </div>
     <div class="panel-body">
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
         <div id="worldMap"></div>
+        <div style="display:flex;gap:6px;flex:0 0 auto;">
+          <button id="infraBtn" onclick="loadInfra()" style="flex:1;background:var(--navy-800);border:1px solid var(--brass);color:var(--parchment);border-radius:4px;padding:8px;font-size:.78rem;cursor:pointer;">⛏️✈️⚓ 今の表示範囲の鉱山・空港・港を表示</button>
+        </div>
         <a class="card wide" href="https://www.marinetraffic.com/" target="_blank" rel="noopener" style="flex:0 0 auto;">
           <span class="name">MarineTraffic(参考リンク)</span><span class="desc">リアルタイム海上輸送・港の混雑状況</span>
         </a>
@@ -185,6 +188,8 @@
       </div>
       <div class="tab-pane" id="tab-climate">
         <div class="linkgrid">
+          <a class="card wide" id="lnk-oec-home"><span class="name">自国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
+          <a class="card wide" id="lnk-oec-partner"><span class="name">相手国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
           <a class="card wide" id="lnk-climate"><span class="name">世界銀行 気候ポータル(相手国)</span><span class="desc">地域別の気候帯・降水量データ</span></a>
           <a class="card wide" href="https://www.fao.org/faostat/en/#country" target="_blank" rel="noopener"><span class="name">FAOSTAT</span><span class="desc">農産物の生産量・作付面積(国選択画面)</span></a>
           <a class="card wide" href="https://www.jma.go.jp/bosai/map.html" target="_blank" rel="noopener"><span class="name">気象庁 気候・気象データ</span><span class="desc">日本側の農業・輸送への気象影響</span></a>
@@ -402,11 +407,12 @@ function fpBlock(country){
   if(!items) return `<div class="fp-block"><b>${country}</b>: 収録なし。ニュースや資料集で個別に調べてみよう。</div>`;
   return `<div class="fp-block"><b>${country}</b><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
 }
+const CRISIS_COUNTRY_NAME = {sd:"スーダン", mm:"ミャンマー", ua:"ウクライナ", tj:"タジキスタン", cd:"コンゴ民主共和国", ye:"イエメン", ht:"ハイチ", pg:"パプアニューギニア", np:"ネパール", lb:"レバノン"};
 function renderFlashpoints(){
   const body = document.getElementById('flashpointsBody');
   if(!body) return;
   if(currentMode === 'crisis'){
-    const partner = CRISIS_ROUTES[crisisRouteSelect.value] ? COUNTRIES[crisisRouteSelect.value].name : null;
+    const partner = CRISIS_COUNTRY_NAME[crisisRouteSelect.value] || null;
     body.innerHTML = partner ? fpBlock(partner) : '';
   } else {
     const home = homeInput.value.trim(), partner = partnerInput.value.trim();
@@ -487,6 +493,47 @@ function setCard(id, url, {disabled=false}={}){
   el.onclick = (e)=>{ e.preventDefault(); window.open(url, '_blank', 'noopener'); };
 }
 
+window.infraMarkers = [];
+async function loadInfra(){
+  const btn = document.getElementById('infraBtn');
+  const bounds = window.worldMap.getBounds();
+  if(window.worldMap.getZoom() < 5){
+    alert("範囲が広すぎます。地図をもう少しズームインしてから押してください。");
+    return;
+  }
+  const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+  const query = `[out:json][timeout:20];(
+    node["aeroway"="aerodrome"](${bbox});
+    node["landuse"="quarry"](${bbox});
+    way["landuse"="quarry"](${bbox});
+    node["man_made"="mineshaft"](${bbox});
+    node["seamark:type"="harbour"](${bbox});
+  );out center;`;
+  btn.textContent = "検索中…";
+  window.infraMarkers.forEach(m=>m.remove());
+  window.infraMarkers = [];
+  try{
+    const res = await fetch('https://overpass-api.de/api/interpreter', {method:'POST', body: query});
+    const data = await res.json();
+    data.elements.forEach(el=>{
+      const lat = el.lat || (el.center && el.center.lat);
+      const lon = el.lon || (el.center && el.center.lon);
+      if(!lat || !lon) return;
+      let icon = "📍", label = "施設";
+      if(el.tags.aeroway === "aerodrome"){ icon = "✈️"; label = el.tags.name || "空港"; }
+      else if(el.tags.landuse === "quarry" || el.tags.man_made === "mineshaft"){ icon = "⛏️"; label = el.tags.name || "鉱山・採石場"; }
+      else if(el.tags["seamark:type"] === "harbour"){ icon = "⚓"; label = el.tags.name || "港"; }
+      const marker = L.marker([lat, lon], {
+        icon: L.divIcon({html:`<div style="font-size:20px;line-height:1;">${icon}</div>`, className:'', iconSize:[20,20]})
+      }).addTo(window.worldMap).bindTooltip(label);
+      window.infraMarkers.push(marker);
+    });
+    btn.textContent = `⛏️✈️⚓ ${data.elements.length}件見つかりました(もう一度押すと再検索)`;
+  }catch(e){
+    btn.textContent = "取得に失敗しました。時間をおいて再度お試しください";
+  }
+}
+
 function flyTo(center, zoom, label){
   if(window.mapMarker) window.mapMarker.remove();
   window.worldMap.flyTo(center, zoom, {duration:1.0});
@@ -539,6 +586,8 @@ function render(){
     setCard('lnk-climate','',{disabled:true});
     setCard('lnk-factbook','',{disabled:true});
   }
+  setCard('lnk-oec-home', home ? `https://oec.world/en/profile/country/${home.iso3}` : '', {disabled: !home});
+  setCard('lnk-oec-partner', partner ? `https://oec.world/en/profile/country/${partner.iso3}` : '', {disabled: !partner});
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
