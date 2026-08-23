@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>地理探究・交渉ライブラリー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --navy-950:#0d151f; --navy-900:#121e2b; --navy-800:#1a2d3f; --navy-700:#26415a;
+    --parchment:#e8e1cf; --brass:#b8925a; --brass-bright:#d4ab6f; --stamp-red:#8c2f39;
+    --ink:#d8dee5; --ink-dim:#8fa0af;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--navy-950);
+    background-image:radial-gradient(circle at 15% 10%, rgba(184,146,90,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(140,47,57,0.08), transparent 45%);
+    color:var(--ink); font-family:'Noto Sans JP',sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  header{flex:0 0 auto;padding:12px 22px 10px;border-bottom:1px solid var(--navy-700);
+    background:linear-gradient(180deg,var(--navy-900),var(--navy-950));}
+  .titlebar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+  .titlebar h1{font-family:'Shippori Mincho',serif;font-weight:800;font-size:1.25rem;color:var(--brass-bright);margin:0;letter-spacing:.03em;}
+  .titlebar .subtitle{font-size:.66rem;color:var(--ink-dim);letter-spacing:.1em;}
+  .configbar{margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.82rem;}
+  .configbar .grp{display:flex;align-items:center;gap:6px;}
+  .configbar label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--brass);letter-spacing:.06em;}
+  .configbar input[type=text]{background:var(--navy-800);color:var(--parchment);border:1px solid var(--brass);border-radius:4px;padding:5px 8px;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;width:140px;}
+  .configbar .vs{color:var(--ink-dim);font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+  #countryStatus{font-size:.65rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
+  .mode-btn{background:var(--navy-800);color:var(--ink-dim);border:1px solid var(--navy-700);border-radius:4px;padding:5px 10px;font-size:.78rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .mode-btn.active{background:var(--stamp-red);color:#fff;border-color:var(--stamp-red);font-weight:700;}
+  .configbar select{background:var(--navy-800);color:var(--parchment);border:1px solid var(--brass);border-radius:4px;padding:4px 6px;font-family:'Noto Sans JP',sans-serif;font-size:.8rem;}
+  .mission{margin-top:7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:.82rem;}
+  .mission [contenteditable]{outline:none;border-bottom:1px dashed var(--brass);padding:1px 3px;color:var(--parchment);}
+  .mission [contenteditable]:focus{background:rgba(184,146,90,0.12);}
+  .stamp{margin-left:auto;flex:0 0 auto;border:2px solid var(--stamp-red);color:var(--stamp-red);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.6rem;letter-spacing:.12em;padding:4px 9px;border-radius:3px;transform:rotate(-3deg);opacity:.85;}
+  .quotebar{flex:0 0 auto;padding:6px 22px;background:var(--navy-900);border-bottom:1px solid var(--navy-700);
+    display:flex;align-items:baseline;gap:8px;}
+  .quotebar .qmark{color:var(--brass);font-family:'Shippori Mincho',serif;font-size:1.1rem;flex:0 0 auto;}
+  .quotebar .qtext{font-family:'Shippori Mincho',serif;font-style:italic;font-size:.86rem;color:var(--parchment);}
+  .quotebar .qauth{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--ink-dim);white-space:nowrap;}
+  main{flex:1 1 auto;display:grid;grid-template-columns:1.55fr 1fr;gap:12px;padding:12px 22px;min-height:0;}
+  .panel{background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+  .panel-head{flex:0 0 auto;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;color:var(--brass);border-bottom:1px solid var(--navy-700);text-transform:uppercase;}
+  .panel-body{flex:1 1 auto;overflow-y:auto;padding:10px 12px;}
+  .tabs{display:flex;gap:2px;flex:0 0 auto;border-bottom:1px solid var(--navy-700);}
+  .tab-btn{flex:1;background:var(--navy-800);color:var(--ink-dim);border:none;padding:8px 4px;font-family:'Noto Sans JP',sans-serif;font-size:.7rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;line-height:1.3;}
+  .tab-btn.active{color:var(--brass-bright);background:var(--navy-900);border-bottom:2px solid var(--brass);}
+  .tab-pane{display:none;height:100%;}
+  .tab-pane.active{display:flex;flex-direction:column;gap:8px;}
+  .linkgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  a.card{display:flex;flex-direction:column;justify-content:center;gap:2px;background:var(--navy-800);border:1px solid var(--navy-700);border-left:3px solid var(--brass);border-radius:4px;padding:9px 11px;text-decoration:none;color:var(--ink);transition:background .12s;cursor:pointer;}
+  a.card:hover,a.card:focus-visible{background:var(--navy-700);}
+  a.card.disabled{opacity:.35;pointer-events:none;}
+  a.card .name{font-size:.82rem;font-weight:700;color:var(--parchment);}
+  a.card .desc{font-size:.64rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
+  a.card.wide{grid-column:1/-1;}
+  a.card.risk{border-left-color:var(--stamp-red);}
+  .linklist{display:flex;flex-direction:column;gap:6px;}
+  a.rowlink{display:flex;justify-content:space-between;align-items:center;background:var(--navy-800);border:1px solid var(--navy-700);border-radius:4px;padding:6px 10px;text-decoration:none;color:var(--ink);font-size:.78rem;}
+  a.rowlink:hover{background:var(--navy-700);}
+  a.rowlink .arrow{color:var(--brass);font-family:'JetBrains Mono',monospace;}
+  a.rowlink.search-tool{border-left:3px solid #e0b98f;}
+  .sidegap{height:8px;flex:0 0 auto;}
+  details{background:var(--navy-800);border:1px solid var(--navy-700);border-radius:4px;padding:6px 10px;margin-bottom:5px;}
+  details summary{cursor:pointer;font-size:.78rem;font-weight:700;color:var(--parchment);list-style:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details summary::before{content:"▸ ";color:var(--brass);}
+  details[open] summary::before{content:"▾ ";}
+  details p, details ul{font-size:.72rem;color:var(--ink-dim);margin:5px 0 0;padding-left:14px;}
+  footer{flex:0 0 auto;padding:6px 22px 10px;}
+  footer .memobox{display:flex;align-items:center;gap:10px;background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;padding:6px 10px;}
+  footer label{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--brass);white-space:nowrap;}
+  footer textarea{flex:1;resize:none;background:transparent;border:none;color:var(--parchment);font-family:'Noto Sans JP',sans-serif;font-size:.8rem;outline:none;height:22px;line-height:22px;}
+  #worldMap{width:100%;height:100%;border-radius:4px;background:var(--navy-800);}
+  .leaflet-control-layers{background:var(--navy-900) !important;color:var(--ink) !important;border:1px solid var(--brass) !important;font-size:.75rem;}
+  .leaflet-control-layers-toggle{filter:invert(1);}
+  #tab-earth{height:100%;}
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--navy-700);border-radius:4px;}
+  @media(max-width:860px){main{grid-template-columns:1fr;overflow-y:auto;} body{overflow:auto;} #worldMap{min-height:280px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titlebar">
+    <h1>地理探究・交渉ライブラリー</h1>
+    <span class="subtitle">DIPLOMATIC & CRISIS INTELLIGENCE BOARD</span>
+  </div>
+  <div class="configbar">
+    <div class="grp" id="modeToggle">
+      <button class="mode-btn active" data-mode="nego">🤝 交渉モード</button>
+      <button class="mode-btn" data-mode="crisis">🚨 危機管理モード</button>
+    </div>
+    <div class="grp" id="negoSelectors">
+      <label>自国</label>
+      <input type="text" id="homeInput" list="countryList" value="日本">
+      <span class="vs">⇄</span>
+      <label>相手国</label>
+      <input type="text" id="partnerInput" list="countryList" value="中国">
+    </div>
+    <div class="grp" id="crisisSelectors" style="display:none;">
+      <label>舞台国(ルート)</label>
+      <select id="crisisRouteSelect"></select>
+      <label>現在関門</label>
+      <select id="crisisCheckpointSelect">
+        <option value="0">出発</option><option value="1">第1</option><option value="2">第2</option>
+        <option value="3">第3</option><option value="4">第4</option><option value="5">第5</option><option value="6">第6</option>
+      </select>
+    </div>
+    <span id="countryStatus"></span>
+    <datalist id="countryList"></datalist>
+  </div>
+  <div class="mission">
+    <span contenteditable="true" spellcheck="false" id="missionText">交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。</span>
+    <span class="stamp">要 確認 ‒ 一次情報</span>
+  </div>
+  <div id="geoNote" style="margin-top:6px;font-size:.76rem;background:var(--navy-800);border:1px solid var(--navy-700);border-left:3px solid var(--stamp-red);border-radius:4px;padding:6px 10px;color:var(--parchment);"></div>
+</header>
+
+<div class="quotebar">
+  <span class="qmark">❝</span>
+  <span class="qtext">交渉において最も重要なのは、語られていないことに耳を傾けることだ。</span>
+  <span class="qauth">― ピーター・ドラッカー</span>
+</div>
+
+<main>
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="earth">🗺️<br>地図・地形</button>
+      <button class="tab-btn" data-tab="trade">📊<br>貿易統計</button>
+      <button class="tab-btn" data-tab="tariff">⚠️<br>関税・渡航リスク</button>
+      <button class="tab-btn" data-tab="climate">🌾<br>気候・農産物</button>
+    </div>
+    <div class="panel-body">
+      <div class="tab-pane active" id="tab-earth" style="gap:6px;">
+        <div id="worldMap"></div>
+        <a class="card wide" href="https://www.marinetraffic.com/" target="_blank" rel="noopener" style="flex:0 0 auto;">
+          <span class="name">MarineTraffic(参考リンク)</span><span class="desc">リアルタイム海上輸送・港の混雑状況</span>
+        </a>
+      </div>
+      <div class="tab-pane" id="tab-trade">
+        <div class="linkgrid">
+          <a class="card wide" id="lnk-wits"><span class="name">WITS(世界銀行)二国間貿易</span><span class="desc">自国⇄相手国の輸出入額を自動反映</span></a>
+          <a class="card wide" id="lnk-oec"><span class="name">OEC 貿易可視化</span><span class="desc">相手国→自国への輸出品目ツリーマップ</span></a>
+          <a class="card" id="lnk-jetro"><span class="name">JETRO</span><span class="desc">自国=日本の時のみ有効</span></a>
+          <a class="card" href="https://www.customs.go.jp/toukei/info/index.htm" target="_blank" rel="noopener"><span class="name">財務省 貿易統計</span><span class="desc">日本側の輸出入実績データ</span></a>
+        </div>
+      </div>
+      <div class="tab-pane" id="tab-tariff">
+        <div class="linkgrid">
+          <a class="card wide" href="https://www.jetro.go.jp/world/search/tariff.html" target="_blank" rel="noopener"><span class="name">JETRO 関税率・貿易規制検索</span><span class="desc">品目・国別に関税率を直接検索</span></a>
+          <a class="card wide" href="https://www.mofa.go.jp/mofaj/gaiko/fta/index.html" target="_blank" rel="noopener"><span class="name">外務省 EPA/FTA一覧</span><span class="desc">日本が締結済み・交渉中の協定リスト</span></a>
+          <a class="card wide" href="https://rtais.wto.org/" target="_blank" rel="noopener"><span class="name">WTO 地域貿易協定データベース(RTA-IS)</span><span class="desc">世界の二国間・多国間協定を検索(英語)</span></a>
+          <a class="card wide" href="https://www.customs.go.jp/tariff/index.htm" target="_blank" rel="noopener"><span class="name">財務省 実行関税率表</span><span class="desc">日本の品目別関税率(自国=日本の時に便利)</span></a>
+          <a class="card risk wide" id="lnk-factbook"><span class="name">CIA World Factbook(相手国)</span><span class="desc">政治体制・経済・治安の概況を英語で確認</span></a>
+          <a class="card risk wide" href="https://www.anzen.mofa.go.jp/riskmap/index.html" target="_blank" rel="noopener"><span class="name">外務省 海外安全ホームページ(地図から選択)</span><span class="desc">危険情報レベル・渡航リスクを国ごとに確認</span></a>
+          <a class="card risk wide" href="https://www.anzen.mofa.go.jp/kiken_list.html" target="_blank" rel="noopener"><span class="name">外務省 危険情報一覧</span><span class="desc">レベル別に発出中の危険情報を一覧で確認</span></a>
+        </div>
+      </div>
+      <div class="tab-pane" id="tab-climate">
+        <div class="linkgrid">
+          <a class="card wide" id="lnk-climate"><span class="name">世界銀行 気候ポータル(相手国)</span><span class="desc">地域別の気候帯・降水量データ</span></a>
+          <a class="card wide" href="https://www.fao.org/faostat/en/#country" target="_blank" rel="noopener"><span class="name">FAOSTAT</span><span class="desc">農産物の生産量・作付面積(国選択画面)</span></a>
+          <a class="card wide" href="https://www.jma.go.jp/bosai/map.html" target="_blank" rel="noopener"><span class="name">気象庁 気候・気象データ</span><span class="desc">日本側の農業・輸送への気象影響</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">情勢 ・ 用語 ・ 規則</div>
+    <div class="panel-body">
+      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📰 リアルタイム情勢(直リンク)</div>
+      <div class="linklist">
+        <a class="rowlink" href="https://www3.nhk.or.jp/news/world.html" target="_blank" rel="noopener">NHK NEWS WEB 国際 <span class="arrow">→</span></a>
+        <a class="rowlink" href="https://jp.reuters.com/world/asia-pacific/" target="_blank" rel="noopener">ロイター アジア太平洋 <span class="arrow">→</span></a>
+        <a class="rowlink" href="https://www.asahi.com/international/" target="_blank" rel="noopener">朝日新聞デジタル 国際 <span class="arrow">→</span></a>
+      </div>
+      <div class="sidegap"></div>
+      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📖 ファクト検索(AI回避)</div>
+      <div class="linklist">
+        <a class="rowlink" href="https://kotobank.jp/" target="_blank" rel="noopener">コトバンク(辞書横断) <span class="arrow">→</span></a>
+        <a class="rowlink" href="https://www.weblio.jp/" target="_blank" rel="noopener">Weblio 辞書 <span class="arrow">→</span></a>
+        <a class="rowlink search-tool" href="https://www.google.com/search?udm=14" target="_blank" rel="noopener">Google「Web」検索(AI概要なし) <span class="arrow">→</span></a>
+        <a class="rowlink search-tool" href="https://noai.duckduckgo.com/" target="_blank" rel="noopener">DuckDuckGo No AI <span class="arrow">→</span></a>
+      </div>
+      <div class="sidegap"></div>
+      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📜 交渉カード(共通)</div>
+      <details><summary>使える交渉カード</summary><ul><li>予算/物資・人道支援/国際法・中立性/名誉・将来支援/他国パイプ</li></ul></details>
+      <details><summary>禁止行為</summary><ul><li>タメ口・馴れ合い口調</li><li>根拠のない感情論の主張</li><li>相手国データの捏造・二枚舌</li></ul></details>
+      <details>
+        <summary>📚 交渉の名言・エピソード集</summary>
+        <p style="margin-top:8px;font-weight:700;color:var(--brass);">名言</p>
+        <ul>
+          <li>「恐怖から交渉してはならない。しかし交渉することを恐れてもならない」― J・F・ケネディ(1961年 大統領就任演説)</li>
+          <li>「合意できない点があることに、双方が合意する」― 外交の古くからの知恵(Agree to disagree)</li>
+          <li>「相手の靴を履いて一マイル歩いてみよ」― 交渉術における共感の格言</li>
+          <li>「兵とは詭道なり」― 孫子(戦わずして勝つ、情報と心理戦の重要性)</li>
+          <li>「最良の合意とは、双方が少しずつ不満を残す合意である」― 交渉の経験則</li>
+          <li>「沈黙は最強の交渉カードになりうる」― 交渉術の格言</li>
+          <li>「先に具体的な数字を口にした側が、交渉の主導権を握りやすい」― アンカリング効果(行動経済学)</li>
+        </ul>
+        <p style="margin-top:8px;font-weight:700;color:var(--brass);">有名な交渉エピソード</p>
+        <ul>
+          <li><b>キャンプ・デービッド合意(1978)</b>:エジプト・サダト大統領とイスラエル・ベギン首相が米カーター大統領の仲介で13日間の缶詰め交渉の末、中東和平の枠組みに合意。</li>
+          <li><b>キューバ危機(1962)</b>:米ソが核戦争寸前まで対立するも、公式ルートとは別の非公式な裏チャンネルを使い妥協点を探ることで破局を回避。</li>
+          <li><b>レイキャビク首脳会談(1986)</b>:レーガンとゴルバチョフが核軍縮の大枠合意に迫るも、最終局面で決裂。「合意寸前で崩れる」交渉の典型例。</li>
+          <li><b>ヤルタ会談(1945)</b>:米英ソの首脳が戦後秩序を話し合い、大国間の利害調整の難しさと妥協の産物としての国際秩序を示した。</li>
+          <li><b>キャンプ・デービッドII(2000)</b>:クリントン大統領仲介のイスラエル・パレスチナ交渉は深部まで進みながら決裂。「合意に近づくほど難しくなる」性質を示す例。</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="memobox">
+    <label>📝 参謀メモ</label>
+    <textarea placeholder="見つけたファクト(関税率・危険レベル・気候の違いなど)をここに一行で。大臣役に見せる用。"></textarea>
+  </div>
+</footer>
+
+<script>
+/* 主要国データベース(約100カ国):[日本語名, iso3, 気候ポータルslug, CIA Factbookスラッグ, 緯度, 経度, 初期ズーム] */
+const COUNTRY_DB = [
+["日本","jpn","japan","japan",36.5,138,5],["中国","chn","china","china",35,105,4],
+["アメリカ","usa","united-states","united-states",39,-98,4],["韓国","kor","south-korea","korea-south",36,128,6],
+["オーストラリア","aus","australia","australia",-25,134,4],["インド","ind","india","india",22,79,4],
+["インドネシア","idn","indonesia","indonesia",-2,118,4],["ブラジル","bra","brazil","brazil",-10,-55,4],
+["ドイツ","deu","germany","germany",51,10,5],["フランス","fra","france","france",46,2,5],
+["イギリス","gbr","united-kingdom","united-kingdom",54,-2,5],["イタリア","ita","italy","italy",42,12,5],
+["ロシア","rus","russia","russia",61,90,3],["カナダ","can","canada","canada",56,-106,3],
+["メキシコ","mex","mexico","mexico",23,-102,5],["南アフリカ","zaf","south-africa","south-africa",-29,24,5],
+["サウジアラビア","sau","saudi-arabia","saudi-arabia",24,45,5],["アラブ首長国連邦","are","united-arab-emirates","united-arab-emirates",24,54,6],
+["トルコ","tur","turkey","turkey",39,35,5],["エジプト","egy","egypt","egypt",26,30,5],
+["ナイジェリア","nga","nigeria","nigeria",9,8,5],["ケニア","ken","kenya","kenya",1,38,5],
+["エチオピア","eth","ethiopia","ethiopia",9,40,5],["スーダン","sdn","sudan","sudan",15,30,5],
+["モロッコ","mar","morocco","morocco",32,-6,5],["アルジェリア","dza","algeria","algeria",28,3,5],
+["チュニジア","tun","tunisia","tunisia",34,9,6],["イラン","irn","iran","iran",32,53,5],
+["イラク","irq","iraq","iraq",33,44,6],["イスラエル","isr","israel","israel",31,35,7],
+["ヨルダン","jor","jordan","jordan",31,36,6],["レバノン","lbn","lebanon","lebanon",33.9,35.9,7],
+["シリア","syr","syria","syria",35,38,6],["イエメン","yem","yemen","yemen",15.5,47.5,6],
+["アフガニスタン","afg","afghanistan","afghanistan",33,66,5],["パキスタン","pak","pakistan","pakistan",30,70,5],
+["バングラデシュ","bgd","bangladesh","bangladesh",24,90,6],["スリランカ","lka","sri-lanka","sri-lanka",7,81,7],
+["ネパール","npl","nepal","nepal",28,84,6],["ミャンマー","mmr","myanmar","burma",21,96,5],
+["タイ","tha","thailand","thailand",15,101,5],["ベトナム","vnm","vietnam","vietnam",16,108,5],
+["フィリピン","phl","philippines","philippines",13,122,5],["マレーシア","mys","malaysia","malaysia",4,102,5],
+["シンガポール","sgp","singapore","singapore",1.35,103.8,10],["カンボジア","khm","cambodia","cambodia",12,105,6],
+["ラオス","lao","laos","laos",18,105,6],["モンゴル","mng","mongolia","mongolia",46,104,4],
+["北朝鮮","prk","north-korea","korea-north",40,127,6],["台湾","twn","taiwan","taiwan",23.7,121,7],
+["香港","hkg","hong-kong","hong-kong",22.3,114.2,10],["ウクライナ","ukr","ukraine","ukraine",49,32,5],
+["ポーランド","pol","poland","poland",52,19,6],["ルーマニア","rou","romania","romania",46,25,6],
+["ハンガリー","hun","hungary","hungary",47,19,7],["オランダ","nld","netherlands","netherlands",52.3,5.5,7],
+["ベルギー","bel","belgium","belgium",50.5,4.5,7],["スペイン","esp","spain","spain",40,-4,5],
+["ポルトガル","prt","portugal","portugal",39.5,-8,6],["ギリシャ","grc","greece","greece",39,22,6],
+["スウェーデン","swe","sweden","sweden",62,15,4],["ノルウェー","nor","norway","norway",61,9,4],
+["フィンランド","fin","finland","finland",64,26,4],["デンマーク","dnk","denmark","denmark",56,10,6],
+["スイス","che","switzerland","switzerland",47,8,7],["オーストリア","aut","austria","austria",47.5,14,6],
+["チェコ","cze","czechia","czechia",50,15,6],["アイルランド","irl","ireland","ireland",53,-8,6],
+["ジョージア","geo","georgia","georgia",42,43,6],["アルメニア","arm","armenia","armenia",40,45,7],
+["アゼルバイジャン","aze","azerbaijan","azerbaijan",40.5,47.5,6],["カザフスタン","kaz","kazakhstan","kazakhstan",48,67,4],
+["ウズベキスタン","uzb","uzbekistan","uzbekistan",41,64,5],["タジキスタン","tjk","tajikistan","tajikistan",38.5,71,6],
+["トルクメニスタン","tkm","turkmenistan","turkmenistan",39,59,5],["キルギス","kgz","kyrgyzstan","kyrgyzstan",41,75,6],
+["アルゼンチン","arg","argentina","argentina",-34,-64,4],["チリ","chl","chile","chile",-30,-71,4],
+["ペルー","per","peru","peru",-10,-76,5],["コロンビア","col","colombia","colombia",4,-72,5],
+["ベネズエラ","ven","venezuela","venezuela",8,-66,5],["エクアドル","ecu","ecuador","ecuador",-1.8,-78,6],
+["ボリビア","bol","bolivia","bolivia",-17,-65,5],["パラグアイ","pry","paraguay","paraguay",-23,-58,6],
+["ウルグアイ","ury","uruguay","uruguay",-33,-56,6],["キューバ","cub","cuba","cuba",21.5,-79.5,6],
+["ハイチ","hti","haiti","haiti",19,-72.3,7],["ドミニカ共和国","dom","dominican-republic","dominican-republic",19,-70.5,7],
+["ジャマイカ","jam","jamaica","jamaica",18.1,-77.3,8],["ガーナ","gha","ghana","ghana",8,-1,6],
+["コートジボワール","civ","cote-divoire","cote-d-ivoire",7.5,-5.5,6],["セネガル","sen","senegal","senegal",14.5,-14.5,6],
+["コンゴ民主共和国","cod","congo-dem-rep","congo-democratic-republic-of-the",-2,23,5],
+["コンゴ共和国","cog","congo-rep","congo-republic-of-the",-1,15.8,6],
+["カメルーン","cmr","cameroon","cameroon",5.7,12.7,5],["アンゴラ","ago","angola","angola",-12,18,5],
+["モザンビーク","moz","mozambique","mozambique",-18,35,5],["タンザニア","tza","tanzania","tanzania",-6,35,5],
+["ウガンダ","uga","uganda","uganda",1,32,6],["ザンビア","zmb","zambia","zambia",-13,27,5],
+["ジンバブエ","zwe","zimbabwe","zimbabwe",-19,29.8,6],["ボツワナ","bwa","botswana","botswana",-22,24,5],
+["ナミビア","nam","namibia","namibia",-22,17,5],["マダガスカル","mdg","madagascar","madagascar",-19,46.5,5],
+["リビア","lby","libya","libya",27,17,5],["ニュージーランド","nzl","new-zealand","new-zealand",-41,174,5],
+["パプアニューギニア","png","papua-new-guinea","papua-new-guinea",-6,147,5],["フィジー","fji","fiji","fiji",-18,178,7],
+];
+const COUNTRY_MAP = {};
+COUNTRY_DB.forEach(c=>{ COUNTRY_MAP[c[0]] = {iso3:c[1], climateSlug:c[2], factbookSlug:c[3], center:[c[4],c[5]], zoom:c[6]}; });
+
+/* ===== 危機管理モード:10ルートの出発地・脱出地(直線補間で6関門を概算配置) ===== */
+const CRISIS_ROUTES = {
+  sd:{label:"スーダン(ハルトゥーム→ポートスーダン)", start:[15.5,32.55], startName:"ハルトゥーム", end:[19.62,37.22], endName:"ポートスーダン港"},
+  mm:{label:"ミャンマー(ネピドー→タイ南部国境)", start:[19.75,96.13], startName:"ネピドー", end:[10.0,98.6], endName:"タイ南部国境"},
+  ua:{label:"ウクライナ(東部最前線→ポーランド国境)", start:[48.0,37.8], startName:"東部最前線", end:[50.8,23.9], endName:"ポーランド国境"},
+  tj:{label:"タジキスタン(ドゥシャンベ→北方国境)", start:[38.56,68.79], startName:"ドゥシャンベ", end:[40.3,69.6], endName:"カザフスタン方面国境"},
+  cd:{label:"コンゴ民主共和国(キンシャサ→カタンガ)", start:[-4.32,15.31], startName:"キンシャサ", end:[-11.66,27.48], endName:"南部カタンガ国境"},
+  ye:{label:"イエメン(サナア→オマーン国境)", start:[15.35,44.21], startName:"サナア", end:[16.7,52.2], endName:"オマーン国境"},
+  ht:{label:"ハイチ(ポルトープランス→ドミニカ)", start:[18.59,-72.31], startName:"ポルトープランス", end:[18.5,-68.4], endName:"ドミニカ最東端"},
+  pg:{label:"パプアニューギニア(ウェワク→ポートモレスビー)", start:[-3.55,143.63], startName:"ウェワク", end:[-9.44,147.18], endName:"ポートモレスビー港"},
+  np:{label:"ネパール(カトマンズ→インド国境)", start:[27.71,85.32], startName:"カトマンズ", end:[27.0,84.87], endName:"インド深部国境"},
+  lb:{label:"レバノン(ベイルート→ヨルダン方面)", start:[33.89,35.5], startName:"ベイルート", end:[32.6,36.1], endName:"ヨルダン方面国境(シリア経由)"},
+};
+const CP_FRACTIONS = [0, 0.15, 0.40, 0.65, 0.85, 1.0]; // 0/150/400/650/850/1000km相当
+
+function routeCheckpoints(route){
+  return CP_FRACTIONS.map(f => [
+    route.start[0] + (route.end[0]-route.start[0])*f,
+    route.start[1] + (route.end[1]-route.start[1])*f
+  ]);
+}
+
+/* ===== 交渉モード:地政学の通奏低音カンペ ===== */
+const GEO_UNDERTONES = [
+  [["アメリカ","メキシコ"], "国境における銃・違法薬物の密輸問題、および不法移民の流入問題。大国側はこれらに強い不信感と治安リスクを抱いている。"],
+  [["フランス","アルジェリア"], "過去300年に及ぶ植民地支配、天然資源(モノカルチャー)の搾取、独立戦争時の深い歴史的禍根。"],
+  [["アメリカ","イラク"], "近代の石油利権への介入、湾岸戦争の禍根、およびテロリスクに対する大国側の強い不信感。"],
+  [["日本","中国"], "尖閣諸島周辺の安全保障問題、排他的経済水域(EEZ)の衝突、および歴史認識問題。"],
+];
+function findUndertone(a,b){
+  for(const [pair,text] of GEO_UNDERTONES){
+    if((pair[0]===a && pair[1]===b) || (pair[0]===b && pair[1]===a)) return text;
+  }
+  return null;
+}
+function renderGeoNote(){
+  const a = homeInput.value.trim(), b = partnerInput.value.trim();
+  const note = document.getElementById('geoNote');
+  if(!a || !b){ note.style.display='none'; return; }
+  const found = findUndertone(a,b);
+  if(found){
+    note.style.display='block';
+    note.innerHTML = `⚡ <b>${a}×${b}の通奏低音:</b> ${found}`;
+  } else {
+    const q = encodeURIComponent(`${a} ${b} 関係 歴史 対立`);
+    note.style.display='block';
+    note.innerHTML = `⚡ この2国間の歴史的因縁・安全保障課題はAIが自動設定します。交渉前に <a href="https://www.google.com/search?q=${q}&udm=14" target="_blank" rel="noopener" style="color:var(--brass-bright);">${a}×${b}の関係史を調べる(AI概要なし検索)</a> のもおすすめです。`;
+  }
+}
+
+const datalist = document.getElementById('countryList');
+COUNTRY_DB.forEach(c=>{ const o=document.createElement('option'); o.value=c[0]; datalist.appendChild(o); });
+
+const crisisRouteSelect = document.getElementById('crisisRouteSelect');
+Object.entries(CRISIS_ROUTES).forEach(([key,r])=>{
+  const o = document.createElement('option'); o.value = key; o.textContent = r.label;
+  crisisRouteSelect.appendChild(o);
+});
+const crisisCheckpointSelect = document.getElementById('crisisCheckpointSelect');
+
+const homeInput = document.getElementById('homeInput');
+const partnerInput = document.getElementById('partnerInput');
+const statusEl = document.getElementById('countryStatus');
+
+/* ===== 世界地図 ===== */
+window.worldMap = L.map('worldMap', {worldCopyJump:true}).setView([35,105], 4);
+const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)'
+}).addTo(window.worldMap);
+const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
+});
+const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom:19, attribution:'Tiles &copy; Esri'
+});
+const climateOverlay = L.imageOverlay(
+  'https://commons.wikimedia.org/wiki/Special:FilePath/World_K%C3%B6ppen_Map.png',
+  [[-90,-180],[90,180]], {opacity:0.55}
+);
+L.control.layers(
+  {"地形(山・川の名前が出る)": baseTopo, "標準地図": baseOSM, "衛星写真": baseSat},
+  {"気候区分(ケッペン)": climateOverlay},
+  {position:'topright', collapsed:false}
+).addTo(window.worldMap);
+
+function setCard(id, url, {disabled=false}={}){
+  const el = document.getElementById(id);
+  if(disabled){ el.classList.add('disabled'); el.onclick=null; return; }
+  el.classList.remove('disabled');
+  el.onclick = (e)=>{ e.preventDefault(); window.open(url, '_blank', 'noopener'); };
+}
+
+function flyTo(center, zoom, label){
+  if(window.mapMarker) window.mapMarker.remove();
+  window.worldMap.flyTo(center, zoom, {duration:1.0});
+  window.mapMarker = L.marker(center).addTo(window.worldMap).bindPopup(label);
+}
+
+// リストにない国名の場合、Nominatim(OSM)でゆるく検索して地図だけは動かす
+async function geocodeFallback(name){
+  try{
+    statusEl.textContent = `「${name}」を検索中…`;
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name)}`);
+    const data = await res.json();
+    if(data && data[0]){
+      flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 5, name);
+      statusEl.textContent = `「${name}」は未登録国 ‒ 地図のみ移動しました`;
+    } else {
+      statusEl.textContent = `「${name}」が見つかりませんでした`;
+    }
+  }catch(e){
+    statusEl.textContent = `検索に失敗しました(通信環境を確認)`;
+  }
+}
+
+function render(){
+  const homeName = homeInput.value.trim();
+  const partnerName = partnerInput.value.trim();
+  const home = COUNTRY_MAP[homeName];
+  const partner = COUNTRY_MAP[partnerName];
+
+  if(partner){
+    statusEl.textContent = '';
+    flyTo(partner.center, partner.zoom, partnerName);
+  } else if(partnerName){
+    geocodeFallback(partnerName);
+  }
+
+  if(home && partner){
+    setCard('lnk-wits', `https://wits.worldbank.org/CountryProfile/en/Country/${home.iso3}/Year/LTST/TradeFlow/EXPIMP/Partner/${partner.iso3}`);
+    setCard('lnk-oec', `https://oec.world/en/visualize/tree_map/hs92/export/${partner.iso3}/${home.iso3}/all/show/2022/`);
+  } else {
+    setCard('lnk-wits','',{disabled:true});
+    setCard('lnk-oec','',{disabled:true});
+  }
+  setCard('lnk-jetro', 'https://www.jetro.go.jp/world/', {disabled: homeName !== "日本"});
+
+  if(partner){
+    setCard('lnk-climate', `https://climateknowledgeportal.worldbank.org/country/${partner.climateSlug}`);
+    setCard('lnk-factbook', `https://www.cia.gov/the-world-factbook/countries/${partner.factbookSlug}/`);
+  } else {
+    setCard('lnk-climate','',{disabled:true});
+    setCard('lnk-factbook','',{disabled:true});
+  }
+}
+
+homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); });
+partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); });
+
+/* ===== 危機管理モード:ルート線の描画 ===== */
+window.routeLine = null;
+window.routeCpMarkers = [];
+function drawCrisisRoute(){
+  const route = CRISIS_ROUTES[crisisRouteSelect.value];
+  const cps = routeCheckpoints(route);
+
+  if(window.routeLine) window.routeLine.remove();
+  window.routeCpMarkers.forEach(m=>m.remove());
+  window.routeCpMarkers = [];
+
+  window.routeLine = L.polyline(cps, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
+
+  const labels = ["出発", "第1関門", "第2関門", "第3関門", "第4関門", "第5関門", "第6関門(脱出)"];
+  cps.forEach((pt,i)=>{
+    const marker = L.circleMarker(pt, {radius:6, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
+    marker.bindTooltip(labels[i], {permanent:false});
+    window.routeCpMarkers.push(marker);
+  });
+
+  window.worldMap.fitBounds(window.routeLine.getBounds(), {padding:[30,30]});
+  updateCurrentPosition();
+}
+function updateCurrentPosition(){
+  const route = CRISIS_ROUTES[crisisRouteSelect.value];
+  const cps = routeCheckpoints(route);
+  const idx = Number(crisisCheckpointSelect.value);
+  if(window.mapMarker) window.mapMarker.remove();
+  const label = idx===0 ? route.startName : (idx===6 ? route.endName : `第${idx}関門`);
+  window.mapMarker = L.marker(cps[idx]).addTo(window.worldMap).bindPopup(`現在地: ${label}`).openPopup();
+}
+crisisRouteSelect.addEventListener('change', drawCrisisRoute);
+crisisCheckpointSelect.addEventListener('change', updateCurrentPosition);
+
+/* ===== モード切替 ===== */
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const isCrisis = btn.dataset.mode === 'crisis';
+    document.getElementById('negoSelectors').style.display = isCrisis ? 'none' : 'flex';
+    document.getElementById('crisisSelectors').style.display = isCrisis ? 'flex' : 'none';
+    document.getElementById('missionText').textContent = isCrisis
+      ? '邦人退避・1000km多角横断作戦 ‒ ルートを選ぶと地図に経路と関門が表示されます。'
+      : '交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。';
+    if(isCrisis){
+      document.getElementById('geoNote').style.display = 'none';
+      if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
+      window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
+      drawCrisisRoute();
+    } else {
+      if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
+      window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
+      render();
+      renderGeoNote();
+    }
+  });
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+render();
+renderGeoNote();
+</script>
+</body>
+</html>
