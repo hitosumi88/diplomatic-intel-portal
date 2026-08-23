@@ -40,6 +40,14 @@
   .mission{margin-top:7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:.82rem;}
   .mission [contenteditable]{outline:none;border-bottom:1px dashed var(--brass);padding:1px 3px;color:var(--parchment);}
   .mission [contenteditable]:focus{background:rgba(184,146,90,0.12);}
+  .flashpoints{margin-top:6px;background:var(--navy-800);border:1px solid var(--navy-700);border-left:4px solid var(--brass);border-radius:5px;padding:2px 12px;}
+  .flashpoints summary{cursor:pointer;font-size:.8rem;font-weight:700;color:var(--brass-bright);list-style:none;padding:7px 0;}
+  .flashpoints summary::-webkit-details-marker{display:none;}
+  .flashpoints summary::before{content:"▸ ";}
+  .flashpoints[open] summary::before{content:"▾ ";}
+  .flashpoints .fp-block{padding-bottom:9px;font-size:.78rem;line-height:1.55;}
+  .flashpoints .fp-block b{color:var(--parchment);}
+  .flashpoints ul{margin:4px 0 8px;padding-left:18px;color:var(--ink-dim);}
   .stamp{margin-left:auto;flex:0 0 auto;border:2px solid var(--stamp-red);color:var(--stamp-red);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.6rem;letter-spacing:.12em;padding:4px 9px;border-radius:3px;transform:rotate(-3deg);opacity:.85;}
   .quotebar{flex:0 0 auto;padding:6px 22px;background:var(--navy-900);border-bottom:1px solid var(--navy-700);
     display:flex;align-items:baseline;gap:8px;}
@@ -128,6 +136,10 @@
     <span class="stamp">要 確認 ‒ 一次情報</span>
   </div>
   <div id="geoNote" style="margin-top:6px;font-size:.76rem;background:var(--navy-800);border:1px solid var(--navy-700);border-left:3px solid var(--stamp-red);border-radius:4px;padding:6px 10px;color:var(--parchment);"></div>
+  <details class="flashpoints" id="flashpointsBox">
+    <summary>🕵️ 歴史的対立・因縁ポイント(準備メモ ‒ 頭の片隅に)</summary>
+    <div id="flashpointsBody"></div>
+  </details>
 </header>
 
 <div class="quotebar">
@@ -140,9 +152,9 @@
   <div class="panel">
     <div class="tabs">
       <button class="tab-btn active" data-tab="earth">🗺️<br>地図・地形</button>
+      <button class="tab-btn" data-tab="climate">🌾<br>気候・農産物</button>
       <button class="tab-btn" data-tab="trade">📊<br>貿易統計</button>
       <button class="tab-btn" data-tab="tariff">⚠️<br>関税・渡航リスク</button>
-      <button class="tab-btn" data-tab="climate">🌾<br>気候・農産物</button>
     </div>
     <div class="panel-body">
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
@@ -160,8 +172,9 @@
         </div>
       </div>
       <div class="tab-pane" id="tab-tariff">
+        <div id="epaStatusCard" style="background:var(--navy-800);border:1px solid var(--brass);border-left:4px solid var(--brass);border-radius:5px;padding:10px 14px;margin-bottom:4px;font-size:.82rem;line-height:1.5;"></div>
         <div class="linkgrid">
-          <a class="card wide" href="https://www.jetro.go.jp/world/search/tariff.html" target="_blank" rel="noopener"><span class="name">JETRO 関税率・貿易規制検索</span><span class="desc">品目・国別に関税率を直接検索</span></a>
+          <a class="card wide" href="https://www.jetro.go.jp/world/search/tariff.html" target="_blank" rel="noopener"><span class="name">JETRO 関税率・貿易規制検索</span><span class="desc">品目・国別に関税率を直接検索(正確な税率はここで)</span></a>
           <a class="card wide" href="https://www.mofa.go.jp/mofaj/gaiko/fta/index.html" target="_blank" rel="noopener"><span class="name">外務省 EPA/FTA一覧</span><span class="desc">日本が締結済み・交渉中の協定リスト</span></a>
           <a class="card wide" href="https://rtais.wto.org/" target="_blank" rel="noopener"><span class="name">WTO 地域貿易協定データベース(RTA-IS)</span><span class="desc">世界の二国間・多国間協定を検索(英語)</span></a>
           <a class="card wide" href="https://www.customs.go.jp/tariff/index.htm" target="_blank" rel="noopener"><span class="name">財務省 実行関税率表</span><span class="desc">日本の品目別関税率(自国=日本の時に便利)</span></a>
@@ -320,6 +333,90 @@ function routeCheckpoints(route){
   ]);
 }
 
+/* ===== 日本のEPA/FTA発効状況(2026年時点、主要なもの) ===== */
+const JAPAN_EPA = {
+  "シンガポール": "発効済み(2002年、日星EPA)",
+  "メキシコ": "発効済み(2005年、日墨EPA)",
+  "マレーシア": "発効済み(2006年、日馬EPA)",
+  "チリ": "発効済み(2007年、日チリEPA)",
+  "タイ": "発効済み(2007年、日タイEPA)",
+  "インドネシア": "発効済み(2008年、日インドネシアEPA)",
+  "フィリピン": "発効済み(2008年、日比EPA)",
+  "スイス": "発効済み(2009年、日瑞EPA)",
+  "ベトナム": "発効済み(2009年、日越EPA/RCEP)",
+  "インド": "発効済み(2011年、日印EPA)",
+  "ペルー": "発効済み(2012年、日ペルーEPA/CPTPP)",
+  "オーストラリア": "発効済み(2015年、日豪EPA/CPTPP)",
+  "モンゴル": "発効済み(2016年、日モンゴルEPA)",
+  "カナダ": "発効済み(2018年、CPTPP)",
+  "ニュージーランド": "発効済み(2018年、CPTPP)",
+  "ブルネイ": "発効済み(2018年、CPTPP)",
+  "ドイツ": "発効済み(2019年、日EU・EPA)",
+  "フランス": "発効済み(2019年、日EU・EPA)",
+  "イタリア": "発効済み(2019年、日EU・EPA)",
+  "アメリカ": "限定的な貿易協定のみ(2020年、日米貿易協定。包括的EPAではない)",
+  "イギリス": "発効済み(2021年、日英EPA)",
+  "中国": "発効済み(2022年、RCEP。二国間EPAは未締結)",
+  "韓国": "発効済み(2022年、RCEP。二国間EPAは未締結)",
+};
+function renderEpaStatus(){
+  const home = homeInput.value.trim();
+  const partner = partnerInput.value.trim();
+  const card = document.getElementById('epaStatusCard');
+  if(!card) return;
+  if(home === "日本" && JAPAN_EPA[partner]){
+    card.innerHTML = `🇯🇵 日本 × ${partner}: <b>${JAPAN_EPA[partner]}</b><br><span style="color:var(--ink-dim);font-size:.72rem;">品目ごとの正確な税率はJETRO検索で確認してください。</span>`;
+  } else if(home === "日本"){
+    card.innerHTML = `🇯🇵 日本 × ${partner || "(相手国未入力)"}: 発効中のEPA/FTAは確認できませんでした(未締結、または一覧未収録の可能性)。<br><span style="color:var(--ink-dim);font-size:.72rem;">WTO RTA-ISで直接確認してください。</span>`;
+  } else {
+    card.innerHTML = `この一覧は「自国=日本」の場合のみ対応しています。${home || "(自国未入力)"} × ${partner || "(相手国未入力)"} の協定状況は下のWTO RTA-ISで確認してください。`;
+  }
+}
+
+/* ===== 代表的な歴史的対立・因縁ポイント(国単位、準備メモ用) ===== */
+const HISTORY_FLASHPOINTS = {
+  "日本": ["尖閣諸島(中国・台湾と領有権問題)", "竹島(韓国と領有権問題)", "北方領土(ロシアと帰属問題)", "歴史認識問題(近隣国との教科書・戦争責任を巡る摩擦)"],
+  "中国": ["尖閣諸島(日本と領有権問題)", "南シナ海・九段線を巡る東南アジア諸国との紛争", "台湾問題(統一を巡る立場の対立)", "チベット・新疆ウイグル自治区を巡る国際的な人権批判"],
+  "アメリカ": ["イラク・湾岸戦争を巡る中東諸国との歴史的不信", "メキシコとの国境管理・移民問題", "先住民政策を巡る歴史的な負の遺産"],
+  "オーストラリア": ["先住民(アボリジニ)政策を巡る歴史的謝罪と和解の過程", "対中貿易依存と対米安全保障関係の板挟み"],
+  "インド": ["パキスタンとのカシミール地方帰属問題", "中国との国境未確定地域(アクサイチン等)を巡る対立", "ヒンドゥー・イスラム間の宗教対立の歴史"],
+  "ブラジル": ["アマゾン開発を巡る国際的な環境圧力との摩擦"],
+  "ドイツ": ["第二次世界大戦の歴史的責任を巡る国内外の意識", "EU内での経済格差を巡る南欧諸国との摩擦"],
+  "メキシコ": ["アメリカとの国境地帯における移民・麻薬密輸問題", "米墨戦争(19世紀)による領土喪失の歴史的記憶"],
+  "アルジェリア": ["フランスによる植民地支配(1830-1962)と独立戦争の歴史的禍根", "モロッコとの西サハラ問題を巡る対立"],
+  "フランス": ["旧植民地(アルジェリア等)との歴史的な緊張関係", "EU内での農業政策を巡る対立"],
+  "イラク": ["湾岸戦争・イラク戦争を巡る欧米との歴史的不信", "クルド人自治区の独立志向を巡る問題", "スンニ派・シーア派の宗派対立"],
+  "スーダン": ["ダルフール紛争", "南スーダン独立(2011年)に至る内戦の歴史", "アラブ系・非アラブ系住民間の民族対立"],
+  "ミャンマー": ["ロヒンギャ族を巡る民族・宗教(仏教徒とムスリム)対立", "軍事政権と民主化勢力の対立", "多数の少数民族武装勢力との内戦"],
+  "ウクライナ": ["クリミア半島を巡るロシアとの領有権問題(2014年併合)", "東部ドンバス地域の帰属を巡る紛争", "歴史認識(ソ連時代の記憶)を巡る対ロシア感情"],
+  "タジキスタン": ["1990年代の内戦(イスラム勢力と世俗政権の対立)の記憶", "キルギスとの国境未画定地域を巡る紛争"],
+  "コンゴ民主共和国": ["東部における資源(レアメタル)を巡る武装勢力間の紛争", "ルワンダ・ウガンダとの関係を巡る国境地帯の不安定さ"],
+  "イエメン": ["北イエメンと南イエメンの統一(1990年)を巡る歴史", "フーシ派とサウジ主導連合の宗派・地政学対立"],
+  "ハイチ": ["フランスからの独立(1804年)後の歴史的孤立", "ドミニカ共和国との民族・移民を巡る緊張"],
+  "パプアニューギニア": ["多数の部族社会間の伝統的対立", "ブーゲンビル島の分離独立運動の歴史"],
+  "ネパール": ["インドとの国境・水資源を巡る依存関係", "王政廃止(2008年)に至る内戦(毛派反乱)の記憶"],
+  "レバノン": ["宗派(キリスト教・スンニ派・シーア派)間のパワーバランスを巡る歴史的緊張", "シリア・イスラエルとの関係を巡る地政学的板挟み"],
+};
+function fpBlock(country){
+  const items = HISTORY_FLASHPOINTS[country];
+  if(!items) return `<div class="fp-block"><b>${country}</b>: 収録なし。ニュースや資料集で個別に調べてみよう。</div>`;
+  return `<div class="fp-block"><b>${country}</b><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+}
+function renderFlashpoints(){
+  const body = document.getElementById('flashpointsBody');
+  if(!body) return;
+  if(currentMode === 'crisis'){
+    const partner = CRISIS_ROUTES[crisisRouteSelect.value] ? COUNTRIES[crisisRouteSelect.value].name : null;
+    body.innerHTML = partner ? fpBlock(partner) : '';
+  } else {
+    const home = homeInput.value.trim(), partner = partnerInput.value.trim();
+    let out = '';
+    if(home) out += fpBlock(home);
+    if(partner) out += fpBlock(partner);
+    body.innerHTML = out;
+  }
+}
+
 /* ===== 交渉モード:地政学の通奏低音カンペ ===== */
 const GEO_UNDERTONES = [
   [["アメリカ","メキシコ"], "国境における銃・違法薬物の密輸問題、および不法移民の流入問題。大国側はこれらに強い不信感と治安リスクを抱いている。"],
@@ -444,8 +541,8 @@ function render(){
   }
 }
 
-homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); });
-partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); });
+homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
+partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
 
 /* ===== 危機管理モード:ルート線の描画 ===== */
 window.routeLine = null;
@@ -478,7 +575,7 @@ function updateCurrentPosition(){
   const label = idx===0 ? route.startName : (idx===6 ? route.endName : `第${idx}関門`);
   window.mapMarker = L.marker(cps[idx]).addTo(window.worldMap).bindPopup(`現在地: ${label}`).openPopup();
 }
-crisisRouteSelect.addEventListener('change', drawCrisisRoute);
+crisisRouteSelect.addEventListener('change', ()=>{ drawCrisisRoute(); renderFlashpoints(); });
 crisisCheckpointSelect.addEventListener('change', updateCurrentPosition);
 
 /* ===== モード切替 ===== */
@@ -497,11 +594,13 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
       drawCrisisRoute();
+      renderFlashpoints();
     } else {
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
       render();
       renderGeoNote();
+      renderFlashpoints();
     }
   });
 });
@@ -552,6 +651,8 @@ document.getElementById('newsKeyword').addEventListener('keydown', (e)=>{
 
 render();
 renderGeoNote();
+renderEpaStatus();
+renderFlashpoints();
 </script>
 </body>
 </html>
