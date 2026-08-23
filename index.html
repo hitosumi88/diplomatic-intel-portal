@@ -254,6 +254,7 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* 主要国データベース(約100カ国):[日本語名, iso3, 気候ポータルslug, CIA Factbookスラッグ, 緯度, 経度, 初期ズーム] */
 const COUNTRY_DB = [
@@ -467,11 +468,12 @@ const statusEl = document.getElementById('countryStatus');
 
 /* ===== 世界地図 ===== */
 window.worldMap = L.map('worldMap', {worldCopyJump:true}).setView([35,105], 4);
-const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-  maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)'
-}).addTo(window.worldMap);
 const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
+}).addTo(window.worldMap);
+const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA) ‒ 混雑時は表示が遅くなります',
+  maxNativeZoom:17
 });
 const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom:19, attribution:'Tiles &copy; Esri'
@@ -481,7 +483,7 @@ const climateOverlay = L.imageOverlay(
   [[-90,-180],[90,180]], {opacity:0.55}
 );
 L.control.layers(
-  {"地形(山・川の名前が出る)": baseTopo, "標準地図": baseOSM, "衛星写真": baseSat},
+  {"標準地図": baseOSM, "地形(山・川の名前が出る・混雑時は遅め)": baseTopo, "衛星写真": baseSat},
   {"気候区分(ケッペン)": climateOverlay},
   {position:'topright', collapsed:false}
 ).addTo(window.worldMap);
@@ -494,27 +496,41 @@ function setCard(id, url, {disabled=false}={}){
 }
 
 window.infraMarkers = [];
+const OVERPASS_MIRRORS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+async function fetchOverpass(query){
+  for(const url of OVERPASS_MIRRORS){
+    try{
+      const controller = new AbortController();
+      const timer = setTimeout(()=>controller.abort(), 12000);
+      const res = await fetch(url, {method:'POST', body: query, signal: controller.signal});
+      clearTimeout(timer);
+      if(res.ok) return await res.json();
+    }catch(e){ /* このミラーがダメなら次を試す */ }
+  }
+  throw new Error("all mirrors failed");
+}
 async function loadInfra(){
   const btn = document.getElementById('infraBtn');
   const bounds = window.worldMap.getBounds();
-  if(window.worldMap.getZoom() < 5){
-    alert("範囲が広すぎます。地図をもう少しズームインしてから押してください。");
+  if(window.worldMap.getZoom() < 7){
+    alert("範囲が広すぎます。もう少しズームイン(都市1つ分程度)してから押してください。");
     return;
   }
   const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
-  const query = `[out:json][timeout:20];(
+  const query = `[out:json][timeout:15];(
     node["aeroway"="aerodrome"](${bbox});
     node["landuse"="quarry"](${bbox});
-    way["landuse"="quarry"](${bbox});
     node["man_made"="mineshaft"](${bbox});
     node["seamark:type"="harbour"](${bbox});
   );out center;`;
-  btn.textContent = "検索中…";
+  btn.textContent = "検索中…(数秒〜10秒程度)";
   window.infraMarkers.forEach(m=>m.remove());
   window.infraMarkers = [];
   try{
-    const res = await fetch('https://overpass-api.de/api/interpreter', {method:'POST', body: query});
-    const data = await res.json();
+    const data = await fetchOverpass(query);
     data.elements.forEach(el=>{
       const lat = el.lat || (el.center && el.center.lat);
       const lon = el.lon || (el.center && el.center.lon);
@@ -530,7 +546,7 @@ async function loadInfra(){
     });
     btn.textContent = `⛏️✈️⚓ ${data.elements.length}件見つかりました(もう一度押すと再検索)`;
   }catch(e){
-    btn.textContent = "取得に失敗しました。時間をおいて再度お試しください";
+    btn.textContent = "検索サーバーが混雑しています。30秒ほど待って再度お試しください";
   }
 }
 
