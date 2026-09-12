@@ -477,8 +477,12 @@ const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
 const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom:19, attribution:'Tiles &copy; Esri'
 });
+// Wikimedia commonsの"World Köppen Map.png"は地図本体に加えてタイトル・凡例まで
+// 1枚の画像に含んでいるため([[-90,-180],[90,180]]の全球範囲としては地図部分が
+// 実際より小さく、余白分だけ座標がずれてしまう)、地図部分だけを切り出した画像
+// (koppen-map.png)をこのリポジトリ内に同梱し、それを使う。
 const climateOverlay = L.imageOverlay(
-  'https://commons.wikimedia.org/wiki/Special:FilePath/World_K%C3%B6ppen_Map.png',
+  'koppen-map.png',
   [[-90,-180],[90,180]], {opacity:0.55}
 );
 L.control.layers(
