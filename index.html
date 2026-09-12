@@ -477,13 +477,19 @@ const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
 const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom:19, attribution:'Tiles &copy; Esri'
 });
-// Wikimedia commonsの"World Köppen Map.png"は地図本体に加えてタイトル・凡例まで
-// 1枚の画像に含んでいるため([[-90,-180],[90,180]]の全球範囲としては地図部分が
-// 実際より小さく、余白分だけ座標がずれてしまう)、地図部分だけを切り出した画像
-// (koppen-map.png)をこのリポジトリ内に同梱し、それを使う。
+// もとのWikimedia commons "World Köppen Map.png" は地図本体に加えてタイトル・
+// 凡例まで1枚の画像に含んでいたため地図部分だけを切り出し済み。さらに、
+// L.imageOverlay は画像を単純な矩形として引き伸ばして表示するだけなので、
+// 緯度方向に等間隔(正距円筒図法)の画像をそのまま貼ると、Leafletの標準地図
+// (ウェブメルカトル図法。極に近いほど南北方向に引き伸ばされる)とはズレる
+// ‒ 実際、低緯度〜中緯度のみ見ると合っているように見えても、高緯度になる
+// ほど本来の陸地からずれて表示されていた。そのため画像自体を事前にウェブ
+// メルカトル図法へ変換済み(koppen-map.png)にしてあり、その正しい範囲
+// (Leaflet/OSM標準のウェブメルカトル境界である北緯・南緯85.0511287798度)
+// を指定している。
 const climateOverlay = L.imageOverlay(
   'koppen-map.png',
-  [[-90,-180],[90,180]], {opacity:0.55}
+  [[-85.0511287798,-180],[85.0511287798,180]], {opacity:0.55}
 );
 L.control.layers(
   {"標準地図": baseOSM, "地形(山・川の名前が出る・混雑時は遅め)": baseTopo, "衛星写真": baseSat},
