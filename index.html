@@ -469,14 +469,14 @@ const statusEl = document.getElementById('countryStatus');
 window.worldMap = L.map('worldMap', {worldCopyJump:true}).setView([35,105], 4);
 const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom:19, attribution:'&copy; OpenStreetMap contributors'
-}).addTo(window.worldMap);
+});
 const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
   maxZoom:17, attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA) ‒ 混雑時は表示が遅くなります',
   maxNativeZoom:17
 });
 const baseSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom:19, attribution:'Tiles &copy; Esri'
-});
+}).addTo(window.worldMap);
 // もとのWikimedia commons "World Köppen Map.png" は地図本体に加えてタイトル・
 // 凡例まで1枚の画像に含んでいたため地図部分だけを切り出し済み。さらに、
 // L.imageOverlay は画像を単純な矩形として引き伸ばして表示するだけなので、
