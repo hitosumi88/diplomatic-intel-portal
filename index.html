@@ -28,6 +28,10 @@
   .titlebar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
   .titlebar h1{font-family:'Shippori Mincho',serif;font-weight:800;font-size:1.25rem;color:var(--brass-bright);margin:0;letter-spacing:.03em;}
   .titlebar .subtitle{font-size:.66rem;color:var(--ink-dim);letter-spacing:.1em;}
+  .titlebar .headerquote{margin-left:auto;font-family:'Shippori Mincho',serif;font-style:italic;font-size:.72rem;color:var(--ink-dim);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%;opacity:.75;}
+  .titlebar .headerquote .qmark{color:var(--brass);font-style:normal;}
+  .titlebar .headerquote .qauth{font-family:'JetBrains Mono',monospace;font-style:normal;}
   .configbar{margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.82rem;}
   .configbar .grp{display:flex;align-items:center;gap:6px;}
   .configbar label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--brass);letter-spacing:.06em;}
@@ -49,11 +53,6 @@
   .flashpoints .fp-block b{color:var(--parchment);}
   .flashpoints ul{margin:4px 0 8px;padding-left:18px;color:var(--ink-dim);}
   .stamp{margin-left:auto;flex:0 0 auto;border:2px solid var(--stamp-red);color:var(--stamp-red);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.6rem;letter-spacing:.12em;padding:4px 9px;border-radius:3px;transform:rotate(-3deg);opacity:.85;}
-  .quotebar{flex:0 0 auto;padding:6px 22px;background:var(--navy-900);border-bottom:1px solid var(--navy-700);
-    display:flex;align-items:baseline;gap:8px;}
-  .quotebar .qmark{color:var(--brass);font-family:'Shippori Mincho',serif;font-size:1.1rem;flex:0 0 auto;}
-  .quotebar .qtext{font-family:'Shippori Mincho',serif;font-style:italic;font-size:.86rem;color:var(--parchment);}
-  .quotebar .qauth{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--ink-dim);white-space:nowrap;}
   main{flex:1 1 auto;display:grid;grid-template-columns:1.55fr 1fr;gap:12px;padding:12px 22px;min-height:0;}
   .panel{background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
   .panel-head{flex:0 0 auto;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;color:var(--brass);border-bottom:1px solid var(--navy-700);text-transform:uppercase;}
@@ -104,6 +103,7 @@
        積まれた1カラムレイアウトになる。地図は高さの基準を失って280px相当まで
        潰れてしまっていたため、ビューポート高さbasisで十分な高さを確保する。 */
     #worldMap{min-height:65vh;}
+    .titlebar .headerquote{display:none;}
   }
 </style>
 </head>
@@ -113,6 +113,7 @@
   <div class="titlebar">
     <h1>地理探究・交渉ライブラリー</h1>
     <span class="subtitle">DIPLOMATIC & CRISIS INTELLIGENCE BOARD</span>
+    <span class="headerquote"><span class="qmark">❝</span> 交渉において最も重要なのは、語られていないことに耳を傾けることだ。<span class="qauth"> ― ピーター・ドラッカー</span></span>
   </div>
   <div class="configbar">
     <div class="grp" id="modeToggle">
@@ -148,12 +149,6 @@
     <div id="flashpointsBody"></div>
   </details>
 </header>
-
-<div class="quotebar">
-  <span class="qmark">❝</span>
-  <span class="qtext">交渉において最も重要なのは、語られていないことに耳を傾けることだ。</span>
-  <span class="qauth">― ピーター・ドラッカー</span>
-</div>
 
 <main>
   <div class="panel">
@@ -272,6 +267,21 @@
           <li><b>ヤルタ会談(1945)</b>:米英ソの首脳が戦後秩序を話し合い、大国間の利害調整の難しさと妥協の産物としての国際秩序を示した。</li>
           <li><b>キャンプ・デービッドII(2000)</b>:クリントン大統領仲介のイスラエル・パレスチナ交渉は深部まで進みながら決裂。「合意に近づくほど難しくなる」性質を示す例。</li>
         </ul>
+      </details>
+      <div class="sidegap"></div>
+      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">🚚 危機管理モード:現地物資の相場目安($換算)</div>
+      <details>
+        <summary>⛽💧🩹 燃料・水・医療品などの経済的価値</summary>
+        <ul>
+          <li><b>ディーゼル燃料(1リットル)</b>:平常時は約$1前後。紛争・供給途絶地域では闇市場価格が$3〜10以上に高騰することもある。</li>
+          <li><b>飲料水(1人1日あたり約3リットル)</b>:平常時はほぼ無料〜$0.5程度。供給が止まった地域では$2〜5程度まで上がることがある。</li>
+          <li><b>簡易救急セット(1人用)</b>:$15〜40程度。100人分の医療キットになると$2,000〜4,000程度が目安。</li>
+          <li><b>抗マラリア薬・蛇毒血清など(1人分)</b>:$5〜20程度。</li>
+          <li><b>ポータブル大型浄水器(太陽光駆動式)</b>:$500〜2,000程度。</li>
+          <li><b>車両用スペアタイヤ・修理工具一式</b>:$100〜300程度。</li>
+          <li><b>防寒シェルター・ポータブルストーブ(寒冷地用)</b>:$200〜600程度。</li>
+        </ul>
+        <p style="margin-top:8px;color:var(--ink-dim);">※ いずれも大まかな目安。実際の相場は地域・情勢(供給網の寸断や治安悪化)で大きく変動するため、$100,000の予算内で「物資・人道支援」カードをどこまで切るかの判断材料として使うこと。</p>
       </details>
       <div class="sidegap"></div>
       <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📰 リアルタイム情勢(8ソース横断検索)</div>
