@@ -97,12 +97,22 @@
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--navy-700);border-radius:4px;}
   @media(max-width:860px){
-    main{grid-template-columns:1fr;overflow-y:auto;}
-    body{overflow:auto;}
-    /* 画面を半分に割って(交渉AI+このサイト等)使う場合、地図パネルが縦に
-       積まれた1カラムレイアウトになる。地図は高さの基準を失って280px相当まで
-       潰れてしまっていたため、ビューポート高さbasisで十分な高さを確保する。 */
-    #worldMap{min-height:65vh;}
+    /* 画面を半分に割って(交渉AI+このサイト等)使う場合、地図パネル・情報パネルが
+       縦に積まれた1カラムレイアウトになる。地図パネルは中で overflow:hidden の
+       flexboxを何段か挟んでいるため、#worldMap自体にmin-heightを付けるだけでは
+       Gridの行の高さ計算に反映されず(行は中身の最小サイズを引き継げず小さいまま
+       になり)、地図がその小さい行の中で見えなくなってしまう。そのため行の高さを
+       grid-template-rowsで明示し、地図パネルの行を確実にビューポート高さbasisで
+       確保する。mainをflex:0 0 auto(伸縮なし)にして実際のコンテンツの高さぶんだけ
+       bodyがスクロールするようにし、「情勢・用語・規則」パネルはその分だけ下に
+       押し出す(全画面表示時のデスクトップ用レイアウトはこのメディアクエリの外な
+       ので影響を受けず、スクロールなしのまま)。 */
+    main{
+      grid-template-columns:1fr;
+      grid-template-rows:85vh auto;
+      flex:0 0 auto;
+    }
+    body{overflow-y:auto;}
     .titlebar .headerquote{display:none;}
   }
 </style>
