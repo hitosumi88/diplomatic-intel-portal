@@ -70,6 +70,16 @@
   a.card .desc{font-size:.64rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
   a.card.wide{grid-column:1/-1;}
   a.card.risk{border-left-color:var(--stamp-red);}
+  .weather-box:empty{display:none;}
+  .weather-box .weather-loading{font-size:.76rem;color:var(--ink-dim);padding:10px 2px;}
+  .weather-card{background:var(--navy-800);border:1px solid var(--navy-700);border-left:3px solid var(--brass);border-radius:6px;padding:10px 12px;margin-bottom:10px;}
+  .weather-card .weather-loc{font-size:.68rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+  .weather-card .weather-main{display:flex;align-items:baseline;gap:8px;}
+  .weather-card .weather-icon{font-size:1.4rem;}
+  .weather-card .weather-temp{font-size:1.5rem;font-weight:700;color:var(--parchment);font-family:'JetBrains Mono',monospace;}
+  .weather-card .weather-label{font-size:.82rem;color:var(--ink);}
+  .weather-card .weather-sub{margin-top:4px;font-size:.7rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
+  .weather-card .weather-note{margin-top:6px;font-size:.64rem;color:var(--ink-dim);}
   .linklist{display:flex;flex-direction:column;gap:6px;}
   a.rowlink{display:flex;justify-content:space-between;align-items:center;background:var(--navy-800);border:1px solid var(--navy-700);border-radius:4px;padding:6px 10px;text-decoration:none;color:var(--ink);font-size:.78rem;}
   a.rowlink:hover{background:var(--navy-700);}
@@ -196,6 +206,7 @@
         </div>
       </div>
       <div class="tab-pane" id="tab-climate">
+        <div id="weatherBox" class="weather-box"></div>
         <div class="linkgrid">
           <a class="card wide" id="lnk-oec-home"><span class="name">自国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
           <a class="card wide" id="lnk-oec-partner"><span class="name">相手国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
@@ -522,6 +533,77 @@ function renderGeoNote(){
   }
 }
 
+// ===== 「気候・産業」タブ上部:現地の現在の天気(概算) =====
+// 無料・APIキー不要のOpen-Meteoを使用(https://open-meteo.com)。地点は国の代表座標
+// (COUNTRY_DB)や危機管理モードの現在地点の緯度経度をそのまま渡すだけなので、
+// 都市ピンポイントの気象ではなく「おおよそ」の値になる。
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const WMO_WEATHER_INFO = {
+  0:['☀️','快晴'], 1:['🌤️','晴れ'], 2:['⛅','一部曇り'], 3:['☁️','曇り'],
+  45:['🌫️','霧'], 48:['🌫️','霧氷'],
+  51:['🌦️','弱い霧雨'], 53:['🌦️','霧雨'], 55:['🌧️','強い霧雨'],
+  56:['🌧️','着氷性の霧雨'], 57:['🌧️','強い着氷性の霧雨'],
+  61:['🌧️','小雨'], 63:['🌧️','雨'], 65:['🌧️','大雨'],
+  66:['🌧️','着氷性の雨'], 67:['🌧️','強い着氷性の雨'],
+  71:['🌨️','小雪'], 73:['🌨️','雪'], 75:['❄️','大雪'], 77:['❄️','霧雪'],
+  80:['🌦️','にわか雨'], 81:['🌧️','にわか雨(強)'], 82:['⛈️','激しいにわか雨'],
+  85:['🌨️','にわか雪'], 86:['❄️','激しいにわか雪'],
+  95:['⛈️','雷雨'], 96:['⛈️','雷雨(雹あり)'], 99:['⛈️','雷雨(激しい雹)'],
+};
+function weatherIconLabel(code){
+  return WMO_WEATHER_INFO[code] || ['🌡️','データなし'];
+}
+let weatherRequestSeq = 0;
+async function renderWeather(){
+  const box = document.getElementById('weatherBox');
+  if(!box) return;
+
+  let lat, lon, label;
+  if(currentMode === 'crisis'){
+    const route = CRISIS_ROUTES[crisisRouteSelect.value];
+    if(!route){ box.innerHTML = ''; return; }
+    const cps = routeCheckpoints(route);
+    const idx = Math.min(Number(crisisCheckpointSelect.value) || 0, cps.length - 1);
+    [lat, lon] = cps[idx];
+    label = idx === 0 ? route.startName : (idx === 6 ? route.endName : `第${idx}関門`);
+  } else {
+    const partnerName = partnerInput.value.trim();
+    const partner = COUNTRY_MAP[partnerName];
+    if(!partner){ box.innerHTML = ''; return; }
+    [lat, lon] = partner.center;
+    label = partnerName;
+  }
+
+  const mySeq = ++weatherRequestSeq;
+  box.innerHTML = `<div class="weather-loading">🌡️ ${escapeHtml(label)}付近の気象データを取得中…</div>`;
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+    const res = await fetch(url);
+    if(mySeq !== weatherRequestSeq) return; // 選択が変わった後に古いレスポンスが返ってきた場合は破棄
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const c = data.current;
+    if(!c) throw new Error('no current data');
+    const [icon, wlabel] = weatherIconLabel(c.weather_code);
+    box.innerHTML = `
+      <div class="weather-card">
+        <div class="weather-loc">📍 ${escapeHtml(label)}付近の現在の天気(概算・代表座標ベース)</div>
+        <div class="weather-main">
+          <span class="weather-icon">${icon}</span>
+          <span class="weather-temp">${Math.round(c.temperature_2m)}°C</span>
+          <span class="weather-label">${escapeHtml(wlabel)}</span>
+        </div>
+        <div class="weather-sub">💧 湿度 ${c.relative_humidity_2m}% ・ 🌬️ 風速 ${c.wind_speed_10m}km/h</div>
+        <div class="weather-note">Data: Open-Meteo。国・地点の代表座標を使うため、実際の都市ピンポイントの天気とはズレることがある。</div>
+      </div>`;
+  } catch(e){
+    if(mySeq !== weatherRequestSeq) return;
+    box.innerHTML = '<div class="weather-loading">気象データの取得に失敗しました(通信環境をご確認ください)</div>';
+  }
+}
+
 const datalist = document.getElementById('countryList');
 COUNTRY_DB.forEach(c=>{ const o=document.createElement('option'); o.value=c[0]; datalist.appendChild(o); });
 
@@ -691,7 +773,7 @@ function render(){
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
-partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
+partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); renderWeather(); });
 
 /* ===== 危機管理モード:ルート線の描画 ===== */
 window.routeLine = null;
@@ -729,8 +811,8 @@ function updateCurrentPosition(){
   const label = idx===0 ? route.startName : (idx===6 ? route.endName : `第${idx}関門`);
   window.mapMarker = L.marker(cps[idx]).addTo(window.worldMap).bindPopup(`現在地: ${label}`).openPopup();
 }
-crisisRouteSelect.addEventListener('change', ()=>{ drawCrisisRoute(); renderFlashpoints(); });
-crisisCheckpointSelect.addEventListener('change', updateCurrentPosition);
+crisisRouteSelect.addEventListener('change', ()=>{ drawCrisisRoute(); renderFlashpoints(); renderWeather(); });
+crisisCheckpointSelect.addEventListener('change', ()=>{ updateCurrentPosition(); renderWeather(); });
 
 /* ===== モード切替 ===== */
 document.querySelectorAll('.mode-btn').forEach(btn=>{
@@ -751,6 +833,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
       drawCrisisRoute();
       renderFlashpoints();
+      renderWeather();
     } else {
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
@@ -758,6 +841,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
       render();
       renderGeoNote();
       renderFlashpoints();
+      renderWeather();
     }
   });
 });
@@ -810,6 +894,7 @@ render();
 renderGeoNote();
 renderEpaStatus();
 renderFlashpoints();
+renderWeather();
 </script>
 </body>
 </html>
