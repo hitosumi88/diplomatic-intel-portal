@@ -97,7 +97,14 @@
   #tab-earth{height:100%;}
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--navy-700);border-radius:4px;}
-  @media(max-width:860px){main{grid-template-columns:1fr;overflow-y:auto;} body{overflow:auto;} #worldMap{min-height:280px;}}
+  @media(max-width:860px){
+    main{grid-template-columns:1fr;overflow-y:auto;}
+    body{overflow:auto;}
+    /* 画面を半分に割って(交渉AI+このサイト等)使う場合、地図パネルが縦に
+       積まれた1カラムレイアウトになる。地図は高さの基準を失って280px相当まで
+       潰れてしまっていたため、ビューポート高さbasisで十分な高さを確保する。 */
+    #worldMap{min-height:65vh;}
+  }
 </style>
 </head>
 <body>
