@@ -78,6 +78,7 @@
   .weather-card .weather-icon{font-size:1.4rem;}
   .weather-card .weather-temp{font-size:1.5rem;font-weight:700;color:var(--parchment);font-family:'JetBrains Mono',monospace;}
   .weather-card .weather-label{font-size:.82rem;color:var(--ink);}
+  .weather-card .weather-feelslike{margin-left:auto;font-size:.68rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
   .weather-card .weather-sub{margin-top:4px;font-size:.7rem;color:var(--ink-dim);font-family:'JetBrains Mono',monospace;}
   .weather-card .weather-note{margin-top:6px;font-size:.64rem;color:var(--ink-dim);}
   .linklist{display:flex;flex-direction:column;gap:6px;}
@@ -555,6 +556,15 @@ const WMO_WEATHER_INFO = {
 function weatherIconLabel(code){
   return WMO_WEATHER_INFO[code] || ['🌡️','データなし'];
 }
+// UV指数(WHOの区分: 0-2弱い/3-5中程度/6-7強い/8-10非常に強い/11+極端)
+function uvIndexLabel(uv){
+  if(uv == null) return '';
+  if(uv < 3) return '弱い';
+  if(uv < 6) return '中程度';
+  if(uv < 8) return '強い';
+  if(uv < 11) return '非常に強い';
+  return '極端';
+}
 let weatherRequestSeq = 0;
 async function renderWeather(){
   const box = document.getElementById('weatherBox');
@@ -579,7 +589,9 @@ async function renderWeather(){
   const mySeq = ++weatherRequestSeq;
   box.innerHTML = `<div class="weather-loading">🌡️ ${escapeHtml(label)}付近の気象データを取得中…</div>`;
   try{
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+      + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m`
+      + `&daily=temperature_2m_max,temperature_2m_min,uv_index_max&timezone=auto`;
     const res = await fetch(url);
     if(mySeq !== weatherRequestSeq) return; // 選択が変わった後に古いレスポンスが返ってきた場合は破棄
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -587,6 +599,13 @@ async function renderWeather(){
     const c = data.current;
     if(!c) throw new Error('no current data');
     const [icon, wlabel] = weatherIconLabel(c.weather_code);
+    const d = data.daily;
+    const todayHigh = d?.temperature_2m_max?.[0];
+    const todayLow = d?.temperature_2m_min?.[0];
+    const uv = d?.uv_index_max?.[0];
+    const dailyRow = (todayHigh != null && todayLow != null)
+      ? `<div class="weather-sub">🌡️ 本日 最高 ${Math.round(todayHigh)}°C / 最低 ${Math.round(todayLow)}°C${uv != null ? ` ・ ☀️ UV指数 ${uv.toFixed(1)}(${uvIndexLabel(uv)})` : ''}</div>`
+      : '';
     box.innerHTML = `
       <div class="weather-card">
         <div class="weather-loc">📍 ${escapeHtml(label)}付近の現在の天気(概算・代表座標ベース)</div>
@@ -594,8 +613,10 @@ async function renderWeather(){
           <span class="weather-icon">${icon}</span>
           <span class="weather-temp">${Math.round(c.temperature_2m)}°C</span>
           <span class="weather-label">${escapeHtml(wlabel)}</span>
+          <span class="weather-feelslike">体感 ${Math.round(c.apparent_temperature)}°C</span>
         </div>
-        <div class="weather-sub">💧 湿度 ${c.relative_humidity_2m}% ・ 🌬️ 風速 ${c.wind_speed_10m}km/h</div>
+        <div class="weather-sub">💧 湿度 ${c.relative_humidity_2m}% ・ 🌬️ 風速 ${c.wind_speed_10m}km/h ・ ☔ 降水量 ${c.precipitation.toFixed(1)}mm</div>
+        ${dailyRow}
         <div class="weather-note">Data: Open-Meteo。国・地点の代表座標を使うため、実際の都市ピンポイントの天気とはズレることがある。</div>
       </div>`;
   } catch(e){
