@@ -695,15 +695,20 @@ partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderE
 
 /* ===== 危機管理モード:ルート線の描画 ===== */
 window.routeLine = null;
+window.routeLineCasing = null;
 window.routeCpMarkers = [];
 function drawCrisisRoute(){
   const route = CRISIS_ROUTES[crisisRouteSelect.value];
   const cps = routeCheckpoints(route);
 
   if(window.routeLine) window.routeLine.remove();
+  if(window.routeLineCasing) window.routeLineCasing.remove();
   window.routeCpMarkers.forEach(m=>m.remove());
   window.routeCpMarkers = [];
 
+  // 衛星写真・砂漠地帯の背景では明るい真鍮色だけだと視認しづらいため、
+  // 濃色の縁取り(casing)を下に敷いてから本線を重ねる(地図の背景色に依らず見えるように)。
+  window.routeLineCasing = L.polyline(cps, {color:'#0d151f', weight:7, opacity:0.85}).addTo(window.worldMap);
   window.routeLine = L.polyline(cps, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
 
   const labels = ["出発", "第1関門", "第2関門", "第3関門", "第4関門", "第5関門", "第6関門(脱出)"];
@@ -742,11 +747,13 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     if(isCrisis){
       document.getElementById('geoNote').style.display = 'none';
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
+      if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
       drawCrisisRoute();
       renderFlashpoints();
     } else {
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
+      if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
       render();
       renderGeoNote();
