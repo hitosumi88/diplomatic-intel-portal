@@ -465,6 +465,10 @@ const homeInput = document.getElementById('homeInput');
 const partnerInput = document.getElementById('partnerInput');
 const statusEl = document.getElementById('countryStatus');
 
+// renderFlashpoints()が交渉/危機管理どちらのモードかを判定するために参照する。
+// モード切替ボタンのクリックハンドラ内で更新する(下記「モード切替」セクション)。
+let currentMode = 'nego';
+
 /* ===== 世界地図 ===== */
 window.worldMap = L.map('worldMap', {worldCopyJump:true}).setView([35,105], 4);
 const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -494,7 +498,7 @@ const climateOverlay = L.imageOverlay(
 L.control.layers(
   {"標準地図": baseOSM, "地形(山・川の名前が出る・混雑時は遅め)": baseTopo, "衛星写真": baseSat},
   {"気候区分(ケッペン)": climateOverlay},
-  {position:'topright', collapsed:false}
+  {position:'topright', collapsed:true}
 ).addTo(window.worldMap);
 
 function setCard(id, url, {disabled=false}={}){
@@ -658,6 +662,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     const isCrisis = btn.dataset.mode === 'crisis';
+    currentMode = isCrisis ? 'crisis' : 'nego';
     document.getElementById('negoSelectors').style.display = isCrisis ? 'none' : 'flex';
     document.getElementById('crisisSelectors').style.display = isCrisis ? 'flex' : 'none';
     document.getElementById('missionText').textContent = isCrisis
