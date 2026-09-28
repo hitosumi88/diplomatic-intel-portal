@@ -208,6 +208,15 @@
       </div>
       <div class="tab-pane" id="tab-climate">
         <div id="weatherBox" class="weather-box"></div>
+        <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin:2px 0 4px;">🌾⚡ 国家存続基盤(食料・エネルギー自給率)</div>
+        <div class="linkgrid">
+          <a class="card wide" id="lnk-energy-home"><span class="name">自国のエネルギー自給率(世界銀行)</span><span class="desc">エネルギー純輸入割合(%)の推移データ</span></a>
+          <a class="card wide" id="lnk-energy-partner"><span class="name">相手国のエネルギー自給率(世界銀行)</span><span class="desc">エネルギー純輸入割合(%)の推移データ</span></a>
+          <a class="card wide" id="lnk-owid-energy-home"><span class="name">自国のエネルギー生産・消費(Our World in Data)</span><span class="desc">生産量と消費量をグラフで比較(自給できているか一目で確認)</span></a>
+          <a class="card wide" id="lnk-owid-energy-partner"><span class="name">相手国のエネルギー生産・消費(Our World in Data)</span><span class="desc">生産量と消費量をグラフで比較(自給できているか一目で確認)</span></a>
+          <a class="card wide" href="https://www.fao.org/faostat/en/#data/FBS" target="_blank" rel="noopener"><span class="name">FAOSTAT 食料需給表(Food Balances)</span><span class="desc">国を選択し「生産量・輸入量・輸出量」から自給率相当を確認</span></a>
+          <a class="card wide" href="https://www.maff.go.jp/j/zyukyu/zikyu_ritu/012.html" target="_blank" rel="noopener"><span class="name">農林水産省「日本の食料自給率」</span><span class="desc">自給率の考え方の解説(日本の数字が具体例)</span></a>
+        </div>
         <div class="linkgrid">
           <a class="card wide" id="lnk-oec-home"><span class="name">自国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
           <a class="card wide" id="lnk-oec-partner"><span class="name">相手国の輸出入内訳(OEC)</span><span class="desc">品目別の構成比をツリーマップで確認</span></a>
@@ -397,7 +406,18 @@ const COUNTRY_DB = [
 ["パプアニューギニア","png","papua-new-guinea","papua-new-guinea",-6,147,5],["フィジー","fji","fiji","fiji",-18,178,7],
 ];
 const COUNTRY_MAP = {};
-COUNTRY_DB.forEach(c=>{ COUNTRY_MAP[c[0]] = {iso3:c[1], climateSlug:c[2], factbookSlug:c[3], center:[c[4],c[5]], zoom:c[6]}; });
+// Our World in Data「energy/country/〈slug〉」は基本的に climateSlug と同じ表記だが、
+// 一部の国名（コンゴ2カ国）だけ表記が異なるため、その例外分のみ上書きする。
+const OWID_ENERGY_SLUG_OVERRIDES = {
+  "コンゴ民主共和国": "democratic-republic-of-congo",
+  "コンゴ共和国": "congo",
+};
+COUNTRY_DB.forEach(c=>{
+  COUNTRY_MAP[c[0]] = {
+    iso3:c[1], climateSlug:c[2], factbookSlug:c[3], center:[c[4],c[5]], zoom:c[6],
+    owidEnergySlug: OWID_ENERGY_SLUG_OVERRIDES[c[0]] || c[2],
+  };
+});
 
 /* ===== 危機管理モード:10ルートの出発地・脱出地(直線補間で6関門を概算配置) ===== */
 const CRISIS_ROUTES = {
@@ -791,6 +811,11 @@ function render(){
   }
   setCard('lnk-oec-home', home ? `https://oec.world/en/profile/country/${home.iso3}` : '', {disabled: !home});
   setCard('lnk-oec-partner', partner ? `https://oec.world/en/profile/country/${partner.iso3}` : '', {disabled: !partner});
+
+  setCard('lnk-energy-home', home ? `https://data.worldbank.org/indicator/EG.IMP.CONS.ZS?locations=${home.iso3}` : '', {disabled: !home});
+  setCard('lnk-energy-partner', partner ? `https://data.worldbank.org/indicator/EG.IMP.CONS.ZS?locations=${partner.iso3}` : '', {disabled: !partner});
+  setCard('lnk-owid-energy-home', home ? `https://ourworldindata.org/energy/country/${home.owidEnergySlug}` : '', {disabled: !home});
+  setCard('lnk-owid-energy-partner', partner ? `https://ourworldindata.org/energy/country/${partner.owidEnergySlug}` : '', {disabled: !partner});
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
