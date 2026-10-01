@@ -229,6 +229,7 @@
   <div class="panel">
     <div class="panel-head">情勢 ・ 用語 ・ 規則</div>
     <div class="panel-body">
+      <div id="crisisRoleSection" style="display:none;">
       <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">🛂 大使館職員として(役割・限界・外交特権)</div>
       <details>
         <summary>大使館職員の役割・階級</summary>
@@ -276,6 +277,8 @@
       <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📜 交渉カード(共通)</div>
       <details><summary>使える交渉カード</summary><ul><li>予算/物資・人道支援/国際法・中立性/名誉・将来支援/他国パイプ</li></ul></details>
       <details><summary>禁止行為</summary><ul><li>タメ口・馴れ合い口調</li><li>根拠のない感情論の主張</li><li>相手国データの捏造・二枚舌</li></ul></details>
+      <div class="sidegap"></div>
+      </div>
       <details>
         <summary>📚 交渉の名言・エピソード集</summary>
         <p style="margin-top:8px;font-weight:700;color:var(--brass);">名言</p>
@@ -868,6 +871,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.getElementById('crisisSupplyRefGap').style.display = isCrisis ? 'block' : 'none';
     document.getElementById('crisisSupplyRefHead').style.display = isCrisis ? 'block' : 'none';
     document.getElementById('crisisSupplyRef').style.display = isCrisis ? 'block' : 'none';
+    document.getElementById('crisisRoleSection').style.display = isCrisis ? 'block' : 'none';
     document.getElementById('missionText').textContent = isCrisis
       ? '邦人退避・1000km多角横断作戦 ‒ ルートを選ぶと地図に経路と関門が表示されます。'
       : '交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。';
