@@ -297,9 +297,9 @@
           <li><b>キャンプ・デービッドII(2000)</b>:クリントン大統領仲介のイスラエル・パレスチナ交渉は深部まで進みながら決裂。「合意に近づくほど難しくなる」性質を示す例。</li>
         </ul>
       </details>
-      <div class="sidegap"></div>
-      <div style="font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">🚚 危機管理モード:現地物資の相場目安($換算)</div>
-      <details>
+      <div class="sidegap" id="crisisSupplyRefGap" style="display:none;"></div>
+      <div id="crisisSupplyRefHead" style="display:none;font-size:.66rem;color:var(--brass);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">🚚 危機管理モード:現地物資の相場目安($換算)</div>
+      <details id="crisisSupplyRef" style="display:none;">
         <summary>⛽💧🩹 燃料・水・医療品などの経済的価値</summary>
         <ul>
           <li><b>ディーゼル燃料(1リットル)</b>:平常時は約$1前後。紛争・供給途絶地域では闇市場価格が$3〜10以上に高騰することもある。</li>
@@ -865,6 +865,9 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     currentMode = isCrisis ? 'crisis' : 'nego';
     document.getElementById('negoSelectors').style.display = isCrisis ? 'none' : 'flex';
     document.getElementById('crisisSelectors').style.display = isCrisis ? 'flex' : 'none';
+    document.getElementById('crisisSupplyRefGap').style.display = isCrisis ? 'block' : 'none';
+    document.getElementById('crisisSupplyRefHead').style.display = isCrisis ? 'block' : 'none';
+    document.getElementById('crisisSupplyRef').style.display = isCrisis ? 'block' : 'none';
     document.getElementById('missionText').textContent = isCrisis
       ? '邦人退避・1000km多角横断作戦 ‒ ルートを選ぶと地図に経路と関門が表示されます。'
       : '交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。';
