@@ -669,15 +669,16 @@ const datalist = document.getElementById('countryList');
 COUNTRY_DB.forEach(c=>{ const o=document.createElement('option'); o.value=c[0]; datalist.appendChild(o); });
 
 const crisisRouteSelect = document.getElementById('crisisRouteSelect');
-Object.entries(CRISIS_ROUTES).forEach(([key,r])=>{
-  const o = document.createElement('option'); o.value = key; o.textContent = r.label;
-  crisisRouteSelect.appendChild(o);
-});
 {
   const o = document.createElement('option');
   o.value = 'custom'; o.textContent = '✏️ カスタムルート(自由入力)';
   crisisRouteSelect.appendChild(o);
 }
+Object.entries(CRISIS_ROUTES).forEach(([key,r])=>{
+  const o = document.createElement('option'); o.value = key; o.textContent = r.label;
+  crisisRouteSelect.appendChild(o);
+});
+crisisRouteSelect.value = Object.keys(CRISIS_ROUTES)[0]; // 先頭に出すカスタムルートではなく、プリセット1件目を初期選択にする
 const crisisCheckpointSelect = document.getElementById('crisisCheckpointSelect');
 
 const homeInput = document.getElementById('homeInput');
