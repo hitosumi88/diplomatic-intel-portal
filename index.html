@@ -91,6 +91,14 @@
   .newssearch input{flex:1;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;color:var(--parchment);padding:5px 8px;font-size:.78rem;font-family:'Noto Sans JP',sans-serif;}
   .newssearch button{background:var(--stamp-red);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:.78rem;cursor:pointer;font-weight:700;}
   .newssearch .reset{background:var(--navy-700);}
+  #customRoutePanel{flex:0 0 auto;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+  #customRoutePanel .cr-row{display:flex;flex-direction:column;gap:3px;}
+  #customRoutePanel label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--brass);letter-spacing:.06em;}
+  #customRoutePanel textarea{background:var(--navy-900);color:var(--parchment);border:1px solid var(--navy-700);border-radius:4px;padding:6px 8px;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;resize:vertical;}
+  #customRoutePanel .cr-actions{display:flex;align-items:center;gap:10px;}
+  #customRoutePanel button{background:var(--stamp-red);color:#fff;border:none;border-radius:4px;padding:6px 14px;font-size:.78rem;cursor:pointer;font-weight:700;}
+  #customRoutePanel button:disabled{opacity:.5;cursor:default;}
+  #customRoutePanel .cr-status{font-size:.74rem;color:var(--ink-dim);}
   details{background:var(--navy-800);border:1px solid var(--navy-700);border-radius:4px;padding:6px 10px;margin-bottom:5px;}
   details summary{cursor:pointer;font-size:.78rem;font-weight:700;color:var(--parchment);list-style:none;}
   details summary::-webkit-details-marker{display:none;}
@@ -101,7 +109,7 @@
   footer .memobox{display:flex;align-items:center;gap:10px;background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;padding:6px 10px;}
   footer label{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--brass);white-space:nowrap;}
   footer textarea{flex:1;resize:none;background:transparent;border:none;color:var(--parchment);font-family:'Noto Sans JP',sans-serif;font-size:.8rem;outline:none;height:22px;line-height:22px;}
-  #worldMap{width:100%;height:100%;border-radius:4px;background:var(--navy-800);}
+  #worldMap{width:100%;height:100%;flex:1 1 auto;min-height:0;border-radius:4px;background:var(--navy-800);}
   .leaflet-control-layers{background:var(--navy-900) !important;color:var(--ink) !important;border:1px solid var(--brass) !important;font-size:.75rem;}
   .leaflet-control-layers-toggle{filter:invert(1);}
   #tab-earth{height:100%;}
@@ -152,10 +160,7 @@
       <label>舞台国(ルート)</label>
       <select id="crisisRouteSelect"></select>
       <label>現在関門</label>
-      <select id="crisisCheckpointSelect">
-        <option value="0">出発</option><option value="1">第1</option><option value="2">第2</option>
-        <option value="3">第3</option><option value="4">第4</option><option value="5">第5</option><option value="6">第6</option>
-      </select>
+      <select id="crisisCheckpointSelect"></select>
     </div>
     <span id="countryStatus"></span>
     <datalist id="countryList"></datalist>
@@ -181,6 +186,20 @@
     </div>
     <div class="panel-body">
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
+        <div id="customRoutePanel" style="display:none;">
+          <div class="cr-row">
+            <label>経由地点(出発から順に、1行に1つ ‒ 曲がるルートもそのまま反映されます)</label>
+            <textarea id="customWaypointsInput" rows="2" placeholder="例:&#10;ハルトゥーム&#10;ワドメダニ&#10;カッサラ"></textarea>
+          </div>
+          <div class="cr-row">
+            <label>脱出先候補(1行に1つ ‒ 複数入力すると候補地点として全て地図に表示されます)</label>
+            <textarea id="customDestinationsInput" rows="2" placeholder="例:&#10;ポートスーダン港&#10;エチオピア国境"></textarea>
+          </div>
+          <div class="cr-actions">
+            <button id="customRouteApplyBtn">🗺️ 地図に反映</button>
+            <span class="cr-status" id="customRouteStatus"></span>
+          </div>
+        </div>
         <div id="worldMap"></div>
         <div style="display:flex;gap:6px;flex:0 0 auto;">
           <button id="infraBtn" onclick="loadInfra()" style="flex:1;background:var(--navy-800);border:1px solid var(--brass);color:var(--parchment);border-radius:4px;padding:8px;font-size:.78rem;cursor:pointer;">⛏️✈️⚓ 今の表示範囲の鉱山・空港・港を表示</button>
@@ -517,7 +536,8 @@ function renderFlashpoints(){
   if(!body) return;
   if(currentMode === 'crisis'){
     const partner = CRISIS_COUNTRY_NAME[crisisRouteSelect.value] || null;
-    body.innerHTML = partner ? fpBlock(partner) : '';
+    body.innerHTML = partner ? fpBlock(partner)
+      : (crisisRouteSelect.value === 'custom' ? '<div class="fp-block">カスタムルートは収録データなし。ニュースや資料集で個別に調べてみよう。</div>' : '');
   } else {
     const home = homeInput.value.trim(), partner = partnerInput.value.trim();
     let out = '';
@@ -593,12 +613,11 @@ async function renderWeather(){
 
   let lat, lon, label;
   if(currentMode === 'crisis'){
-    const route = CRISIS_ROUTES[crisisRouteSelect.value];
-    if(!route){ box.innerHTML = ''; return; }
-    const cps = routeCheckpoints(route);
-    const idx = Math.min(Number(crisisCheckpointSelect.value) || 0, cps.length - 1);
-    [lat, lon] = cps[idx];
-    label = idx === 0 ? route.startName : (idx === 6 ? route.endName : `第${idx}関門`);
+    const scenario = getActiveScenario();
+    if(!scenario || scenario.waypoints.length === 0){ box.innerHTML = ''; return; }
+    const pt = scenarioPointAt(scenario, crisisCheckpointSelect.value);
+    if(!pt){ box.innerHTML = ''; return; }
+    lat = pt.lat; lon = pt.lon; label = pt.name;
   } else {
     const partnerName = partnerInput.value.trim();
     const partner = COUNTRY_MAP[partnerName];
@@ -654,6 +673,11 @@ Object.entries(CRISIS_ROUTES).forEach(([key,r])=>{
   const o = document.createElement('option'); o.value = key; o.textContent = r.label;
   crisisRouteSelect.appendChild(o);
 });
+{
+  const o = document.createElement('option');
+  o.value = 'custom'; o.textContent = '✏️ カスタムルート(自由入力)';
+  crisisRouteSelect.appendChild(o);
+}
 const crisisCheckpointSelect = document.getElementById('crisisCheckpointSelect');
 
 const homeInput = document.getElementById('homeInput');
@@ -820,44 +844,164 @@ function render(){
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
 partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); renderWeather(); });
 
-/* ===== 危機管理モード:ルート線の描画 ===== */
+/* ===== 危機管理モード:ルート線の描画 =====
+   プリセット10ルートと、生徒が自由入力する「カスタムルート」の両方を同じ
+   {waypoints:[{name,lat,lon}], destinations:[{name,lat,lon}]} 形式に正規化し、
+   描画・現在地選択・天気取得・因縁ポイント表示のすべてがこの形式だけを見れば
+   よいようにする(プリセット/カスタムで処理を分岐させない)。 */
 window.routeLine = null;
 window.routeLineCasing = null;
 window.routeCpMarkers = [];
-function drawCrisisRoute(){
-  const route = CRISIS_ROUTES[crisisRouteSelect.value];
-  const cps = routeCheckpoints(route);
+window.routeDestLines = [];
+window.customScenario = null; // {waypoints, destinations} ‒「地図に反映」が押されるまでnull
 
+function getActiveScenario(){
+  if(crisisRouteSelect.value === 'custom') return window.customScenario;
+  const route = CRISIS_ROUTES[crisisRouteSelect.value];
+  if(!route) return null;
+  const cps = routeCheckpoints(route); // 直線補間した6点(0/150/400/650/850/1000km相当)
+  const waypoints = cps.slice(0,5).map((pt,i)=>({
+    name: i===0 ? route.startName : `第${i}関門`, lat: pt[0], lon: pt[1]
+  }));
+  const destinations = [{name: route.endName, lat: cps[5][0], lon: cps[5][1]}];
+  return {waypoints, destinations};
+}
+// crisisCheckpointSelectの値は、経由地点なら"0","1",…、脱出先候補なら"d0","d1",…。
+function scenarioPointAt(scenario, value){
+  if(value && value.startsWith('d')){
+    const d = scenario.destinations[Number(value.slice(1))];
+    return d ? {...d} : null;
+  }
+  const wp = scenario.waypoints[Number(value) || 0];
+  return wp ? {...wp} : null;
+}
+function rebuildCheckpointSelect(scenario){
+  crisisCheckpointSelect.innerHTML = '';
+  if(!scenario) return;
+  scenario.waypoints.forEach((wp,i)=>{
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = i===0 ? `出発(${wp.name})` : `第${i}経由地(${wp.name})`;
+    crisisCheckpointSelect.appendChild(o);
+  });
+  const multi = scenario.destinations.length > 1;
+  scenario.destinations.forEach((d,i)=>{
+    const o = document.createElement('option');
+    o.value = `d${i}`;
+    o.textContent = multi ? `脱出先候補${i+1}(${d.name})` : `脱出(${d.name})`;
+    crisisCheckpointSelect.appendChild(o);
+  });
+}
+function drawCrisisRoute(){
   if(window.routeLine) window.routeLine.remove();
+  window.routeLine = null;
   if(window.routeLineCasing) window.routeLineCasing.remove();
+  window.routeLineCasing = null;
   window.routeCpMarkers.forEach(m=>m.remove());
   window.routeCpMarkers = [];
+  window.routeDestLines.forEach(l=>l.remove());
+  window.routeDestLines = [];
 
+  const scenario = getActiveScenario();
+  if(!scenario || scenario.waypoints.length === 0){
+    if(window.mapMarker){ window.mapMarker.remove(); window.mapMarker = null; }
+    return; // カスタム未入力ならまだ何も描かない
+  }
+
+  const waypointPts = scenario.waypoints.map(w=>[w.lat,w.lon]);
   // 衛星写真・砂漠地帯の背景では明るい真鍮色だけだと視認しづらいため、
   // 濃色の縁取り(casing)を下に敷いてから本線を重ねる(地図の背景色に依らず見えるように)。
-  window.routeLineCasing = L.polyline(cps, {color:'#0d151f', weight:7, opacity:0.85}).addTo(window.worldMap);
-  window.routeLine = L.polyline(cps, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
+  window.routeLineCasing = L.polyline(waypointPts, {color:'#0d151f', weight:7, opacity:0.85}).addTo(window.worldMap);
+  window.routeLine = L.polyline(waypointPts, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
 
-  const labels = ["出発", "第1関門", "第2関門", "第3関門", "第4関門", "第5関門", "第6関門(脱出)"];
-  cps.forEach((pt,i)=>{
-    const marker = L.circleMarker(pt, {radius:6, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
-    marker.bindTooltip(labels[i], {permanent:false});
+  scenario.waypoints.forEach((wp,i)=>{
+    const marker = L.circleMarker([wp.lat,wp.lon], {radius:6, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
+    marker.bindTooltip(i===0 ? `出発: ${wp.name}` : `${wp.name}`, {permanent:false});
     window.routeCpMarkers.push(marker);
   });
 
-  window.worldMap.fitBounds(window.routeLine.getBounds(), {padding:[30,30]});
+  // 脱出先候補が複数ある場合、最後の経由地から各候補へ破線で結んで
+  // 「まだ1本に決まっていない選択肢」であることを視覚的に示す。
+  const lastWp = scenario.waypoints[scenario.waypoints.length-1];
+  scenario.destinations.forEach((d,i)=>{
+    const destLine = L.polyline([[lastWp.lat,lastWp.lon],[d.lat,d.lon]], {color:'#4a90a4', weight:2, dashArray:'2,7', opacity:0.85}).addTo(window.worldMap);
+    window.routeDestLines.push(destLine);
+    const marker = L.circleMarker([d.lat,d.lon], {radius:7, color:'#2f6b3d', fillColor:'#9fd9a8', fillOpacity:1, weight:2}).addTo(window.worldMap);
+    marker.bindTooltip(scenario.destinations.length>1 ? `脱出先候補:${d.name}` : `脱出:${d.name}`, {permanent:false});
+    window.routeCpMarkers.push(marker);
+  });
+
+  const allPts = [...waypointPts, ...scenario.destinations.map(d=>[d.lat,d.lon])];
+  window.worldMap.fitBounds(L.latLngBounds(allPts), {padding:[30,30]});
   updateCurrentPosition();
 }
 function updateCurrentPosition(){
-  const route = CRISIS_ROUTES[crisisRouteSelect.value];
-  const cps = routeCheckpoints(route);
-  const idx = Number(crisisCheckpointSelect.value);
+  const scenario = getActiveScenario();
+  if(!scenario || scenario.waypoints.length === 0) return;
+  const pt = scenarioPointAt(scenario, crisisCheckpointSelect.value);
+  if(!pt) return;
   if(window.mapMarker) window.mapMarker.remove();
-  const label = idx===0 ? route.startName : (idx===6 ? route.endName : `第${idx}関門`);
-  window.mapMarker = L.marker(cps[idx]).addTo(window.worldMap).bindPopup(`現在地: ${label}`).openPopup();
+  window.mapMarker = L.marker([pt.lat,pt.lon]).addTo(window.worldMap).bindPopup(`現在地: ${pt.name}`).openPopup();
 }
-crisisRouteSelect.addEventListener('change', ()=>{ drawCrisisRoute(); renderFlashpoints(); renderWeather(); });
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+// Nominatimの利用ポリシー(1秒に1リクエスト程度)に配慮し、複数地点の検索は
+// 呼び出し側で間隔を空けて直列実行する前提の単発ジオコーディング関数。
+async function geocodeOne(name){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name)}`);
+    const data = await res.json();
+    if(data && data[0]) return {lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon)};
+  }catch(e){ /* 下のnullで呼び出し元がエラー表示する */ }
+  return null;
+}
+async function applyCustomRoute(){
+  const btn = document.getElementById('customRouteApplyBtn');
+  const status = document.getElementById('customRouteStatus');
+  const waypointNames = document.getElementById('customWaypointsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const destNames = document.getElementById('customDestinationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(waypointNames.length === 0 || destNames.length === 0){
+    status.textContent = '出発からの経由地点を1つ以上、脱出先候補を1つ以上入力してください。';
+    return;
+  }
+  btn.disabled = true;
+  const total = waypointNames.length + destNames.length;
+  const waypoints = [], destinations = [];
+  let done = 0;
+  for(const name of waypointNames){
+    status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
+    const pt = await geocodeOne(name);
+    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
+    waypoints.push({name, ...pt});
+    done++;
+    if(done < total) await sleep(1100);
+  }
+  for(const name of destNames){
+    status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
+    const pt = await geocodeOne(name);
+    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
+    destinations.push({name, ...pt});
+    done++;
+    if(done < total) await sleep(1100);
+  }
+  window.customScenario = {waypoints, destinations};
+  rebuildCheckpointSelect(window.customScenario);
+  drawCrisisRoute();
+  renderFlashpoints();
+  renderWeather();
+  status.textContent = `✅ 経由地${waypoints.length}件・脱出先候補${destinations.length}件を地図に反映しました。`;
+  btn.disabled = false;
+}
+document.getElementById('customRouteApplyBtn').addEventListener('click', applyCustomRoute);
+crisisRouteSelect.addEventListener('change', ()=>{
+  const isCustom = crisisRouteSelect.value === 'custom';
+  document.getElementById('customRoutePanel').style.display = isCustom ? 'flex' : 'none';
+  rebuildCheckpointSelect(getActiveScenario());
+  drawCrisisRoute();
+  renderFlashpoints();
+  renderWeather();
+});
 crisisCheckpointSelect.addEventListener('change', ()=>{ updateCurrentPosition(); renderWeather(); });
+rebuildCheckpointSelect(getActiveScenario()); // 初期選択(プリセット1件目)分を組み立てておく
 
 /* ===== モード切替 ===== */
 document.querySelectorAll('.mode-btn').forEach(btn=>{
@@ -875,11 +1019,14 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.getElementById('missionText').textContent = isCrisis
       ? '邦人退避・1000km多角横断作戦 ‒ ルートを選ぶと地図に経路と関門が表示されます。'
       : '交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。';
+    document.getElementById('customRoutePanel').style.display = (isCrisis && crisisRouteSelect.value === 'custom') ? 'flex' : 'none';
     if(isCrisis){
       document.getElementById('geoNote').style.display = 'none';
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
+      window.routeDestLines.forEach(l=>l.remove()); window.routeDestLines=[];
+      rebuildCheckpointSelect(getActiveScenario());
       drawCrisisRoute();
       renderFlashpoints();
       renderWeather();
@@ -887,6 +1034,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
+      window.routeDestLines.forEach(l=>l.remove()); window.routeDestLines=[];
       render();
       renderGeoNote();
       renderFlashpoints();
