@@ -91,7 +91,14 @@
   .newssearch input{flex:1;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;color:var(--parchment);padding:5px 8px;font-size:.78rem;font-family:'Noto Sans JP',sans-serif;}
   .newssearch button{background:var(--stamp-red);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:.78rem;cursor:pointer;font-weight:700;}
   .newssearch .reset{background:var(--navy-700);}
-  #customRoutePanel{flex:0 0 auto;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+  #customRoutePanel{flex:0 0 auto;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;padding:6px 10px;}
+  #customRoutePanel[open]{padding-bottom:8px;}
+  #customRoutePanel[open] > summary{margin-bottom:6px;}
+  #customRoutePanel > summary{cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--brass-bright);font-weight:700;list-style:none;padding:2px 0;}
+  #customRoutePanel > summary::-webkit-details-marker{display:none;}
+  #customRoutePanel > summary::before{content:"▸ ";}
+  #customRoutePanel[open] > summary::before{content:"▾ ";}
+  #customRoutePanel[open]{display:flex;flex-direction:column;gap:6px;}
   #customRoutePanel .cr-row{display:flex;flex-direction:column;gap:3px;}
   #customRoutePanel label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--brass);letter-spacing:.06em;}
   #customRoutePanel textarea, #customRoutePanel input[type=text]{background:var(--navy-900);color:var(--parchment);border:1px solid var(--navy-700);border-radius:4px;padding:6px 8px;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;resize:vertical;}
@@ -186,7 +193,8 @@
     </div>
     <div class="panel-body">
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
-        <div id="customRoutePanel" style="display:none;">
+        <details id="customRoutePanel" style="display:none;" open>
+          <summary id="customRoutePanelSummary">✏️ カスタムルート入力(クリックで開閉)</summary>
           <div class="cr-row">
             <label>出発地点〜目的地をまとめて貼り付け(1行目=出発地点、最終行=目的地、間の行=途中の関門)</label>
             <textarea id="customRouteInput" rows="5" placeholder="例:&#10;ハルトゥーム(Khartoum)&#10;ワドメダニ(Wad Madani)&#10;カッサラ(Kassala)&#10;ポートスーダン(Port Sudan)"></textarea>
@@ -196,7 +204,7 @@
             <button id="customRouteApplyBtn">🗺️ 地図に反映</button>
             <span class="cr-status" id="customRouteStatus"></span>
           </div>
-        </div>
+        </details>
         <div id="worldMap"></div>
         <div style="display:flex;gap:6px;flex:0 0 auto;">
           <button id="infraBtn" onclick="loadInfra()" style="flex:1;background:var(--navy-800);border:1px solid var(--brass);color:var(--parchment);border-radius:4px;padding:8px;font-size:.78rem;cursor:pointer;">⛏️✈️⚓ 今の表示範囲の鉱山・空港・港を表示</button>
@@ -1024,11 +1032,16 @@ async function applyCustomRoute(){
   renderWeather();
   status.textContent = `✅ 関門${waypoints.length}件・目的地${destinations.length}件を地図に反映しました。`;
   btn.disabled = false;
+  document.getElementById('customRoutePanelSummary').textContent = `✏️ カスタムルート入力(クリックで開閉) ‒ ✅ 関門${waypoints.length}件・目的地${destinations.length}件 反映済み`;
+  // 反映メッセージを読む時間を少し置いてから自動で閉じ、地図を見やすくする。
+  setTimeout(()=>{ document.getElementById('customRoutePanel').open = false; }, 1500);
 }
 document.getElementById('customRouteApplyBtn').addEventListener('click', applyCustomRoute);
 crisisRouteSelect.addEventListener('change', ()=>{
   const isCustom = crisisRouteSelect.value === 'custom';
-  document.getElementById('customRoutePanel').style.display = isCustom ? 'flex' : 'none';
+  const panel = document.getElementById('customRoutePanel');
+  panel.style.display = isCustom ? '' : 'none';
+  if(isCustom) panel.open = true; // ルートをカスタムに切り替えた直後は入力欄を開いておく
   rebuildCheckpointSelect(getActiveScenario());
   drawCrisisRoute();
   renderFlashpoints();
@@ -1053,7 +1066,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.getElementById('missionText').textContent = isCrisis
       ? '邦人退避・1000km多角横断作戦 ‒ ルートを選ぶと地図に経路と関門が表示されます。'
       : '交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。';
-    document.getElementById('customRoutePanel').style.display = (isCrisis && crisisRouteSelect.value === 'custom') ? 'flex' : 'none';
+    document.getElementById('customRoutePanel').style.display = (isCrisis && crisisRouteSelect.value === 'custom') ? '' : 'none';
     if(isCrisis){
       document.getElementById('geoNote').style.display = 'none';
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
