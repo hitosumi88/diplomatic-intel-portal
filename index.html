@@ -799,7 +799,7 @@ async function geocodeFallback(name){
       flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 5, name);
       statusEl.textContent = `「${name}」は未登録国 ‒ 地図のみ移動しました`;
     } else {
-      statusEl.textContent = `「${name}」が見つかりませんでした`;
+      statusEl.textContent = `「${name}」が見つかりませんでした ‒ 英語表記(ローマ字)でも試してみてください`;
     }
   }catch(e){
     statusEl.textContent = `検索に失敗しました(通信環境を確認)`;
@@ -976,7 +976,7 @@ async function applyCustomRoute(){
 
   status.textContent = `「${startName}」を検索中…(${done+1}/${total})`;
   const startPt = await geocodeOne(startName);
-  if(!startPt){ status.textContent = `「${startName}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
+  if(!startPt){ status.textContent = `「${startName}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
   const waypoints = [{name: startName, ...startPt}];
   done++;
   if(done < total) await sleep(1100);
@@ -984,7 +984,7 @@ async function applyCustomRoute(){
   for(const name of destNames){
     status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
     const pt = await geocodeOne(name);
-    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
+    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
     destinations.push({name, ...pt});
     done++;
     if(done < total) await sleep(1100);
