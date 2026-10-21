@@ -193,7 +193,7 @@
             <p style="margin:2px 0 0;font-size:.7rem;color:var(--ink-dim);">※ 教員のプロンプトで設定した関門の数・順番とそろえて入力すると、AIが「第◯関門」と言った時に生徒がこの地図で同じ地点をすぐ選べます。</p>
           </div>
           <div class="cr-row">
-            <label>脱出先候補(1行に1つ ‒ 複数入力すると候補地点として全て地図に表示されます)</label>
+            <label>目的地(1行に1つ ‒ 複数入力すると候補地点として全て地図に表示されます)</label>
             <textarea id="customDestinationsInput" rows="2" placeholder="例:&#10;ポートスーダン港&#10;エチオピア国境"></textarea>
           </div>
           <div class="cr-actions">
@@ -868,7 +868,7 @@ function getActiveScenario(){
   const destinations = [{name: route.endName, lat: cps[5][0], lon: cps[5][1]}];
   return {waypoints, destinations};
 }
-// crisisCheckpointSelectの値は、関門(経由地点)なら"0","1",…、脱出先候補なら"d0","d1",…。
+// crisisCheckpointSelectの値は、関門(経由地点)なら"0","1",…、目的地なら"d0","d1",…。
 function scenarioPointAt(scenario, value){
   if(value && value.startsWith('d')){
     const d = scenario.destinations[Number(value.slice(1))];
@@ -890,7 +890,7 @@ function rebuildCheckpointSelect(scenario){
   scenario.destinations.forEach((d,i)=>{
     const o = document.createElement('option');
     o.value = `d${i}`;
-    o.textContent = multi ? `脱出先候補${i+1}(${d.name})` : `脱出(${d.name})`;
+    o.textContent = multi ? `目的地${i+1}(${d.name})` : `目的地(${d.name})`;
     crisisCheckpointSelect.appendChild(o);
   });
 }
@@ -922,14 +922,14 @@ function drawCrisisRoute(){
     window.routeCpMarkers.push(marker);
   });
 
-  // 脱出先候補が複数ある場合、最後の経由地から各候補へ破線で結んで
+  // 目的地が複数ある場合、最後の経由地から各候補へ破線で結んで
   // 「まだ1本に決まっていない選択肢」であることを視覚的に示す。
   const lastWp = scenario.waypoints[scenario.waypoints.length-1];
   scenario.destinations.forEach((d,i)=>{
     const destLine = L.polyline([[lastWp.lat,lastWp.lon],[d.lat,d.lon]], {color:'#4a90a4', weight:2, dashArray:'2,7', opacity:0.85}).addTo(window.worldMap);
     window.routeDestLines.push(destLine);
     const marker = L.circleMarker([d.lat,d.lon], {radius:7, color:'#2f6b3d', fillColor:'#9fd9a8', fillOpacity:1, weight:2}).addTo(window.worldMap);
-    marker.bindTooltip(scenario.destinations.length>1 ? `脱出先候補:${d.name}` : `脱出:${d.name}`, {permanent:false});
+    marker.bindTooltip(scenario.destinations.length>1 ? `目的地候補:${d.name}` : `目的地:${d.name}`, {permanent:false});
     window.routeCpMarkers.push(marker);
   });
 
@@ -962,7 +962,7 @@ async function applyCustomRoute(){
   const waypointNames = document.getElementById('customWaypointsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const destNames = document.getElementById('customDestinationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
   if(waypointNames.length === 0 || destNames.length === 0){
-    status.textContent = '出発からの関門(経由地点)を1つ以上、脱出先候補を1つ以上入力してください。';
+    status.textContent = '出発からの関門(経由地点)を1つ以上、目的地を1つ以上入力してください。';
     return;
   }
   btn.disabled = true;
@@ -990,7 +990,7 @@ async function applyCustomRoute(){
   drawCrisisRoute();
   renderFlashpoints();
   renderWeather();
-  status.textContent = `✅ 関門${waypoints.length}件・脱出先候補${destinations.length}件を地図に反映しました。`;
+  status.textContent = `✅ 関門${waypoints.length}件・目的地${destinations.length}件を地図に反映しました。`;
   btn.disabled = false;
 }
 document.getElementById('customRouteApplyBtn').addEventListener('click', applyCustomRoute);
