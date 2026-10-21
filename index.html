@@ -973,6 +973,16 @@ function parseCustomRouteInput(raw){
   }
   return {startName: mainLines[0] || '', midNames: mainLines.slice(1), destNames};
 }
+// 「カタカナ(現地表記)」形式の1行から、表示用の名前(カタカナ部分)と
+// 検索に使う名前(括弧内の現地表記)を分離する。括弧がなければ入力全体を両方に使う
+// (従来通りの単純な地名入力もそのまま動く)。全角（）・半角()のどちらにも対応する。
+function splitDisplayAndQuery(raw){
+  const m = raw.match(/^(.*?)[（(]([^）)]+)[）)]\s*$/);
+  if(m && m[2].trim()){
+    return {display: (m[1].trim() || raw), query: m[2].trim()};
+  }
+  return {display: raw, query: raw};
+}
 async function applyCustomRoute(){
   const btn = document.getElementById('customRouteApplyBtn');
   const status = document.getElementById('customRouteStatus');
@@ -988,20 +998,22 @@ async function applyCustomRoute(){
   const destinations = [];
   let done = 0;
 
-  for(const name of [startName, ...midNames]){
-    status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
-    const pt = await geocodeOne(name);
-    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
-    waypoints.push({name, ...pt});
+  for(const raw of [startName, ...midNames]){
+    const {display, query} = splitDisplayAndQuery(raw);
+    status.textContent = `「${query}」を検索中…(${done+1}/${total})`;
+    const pt = await geocodeOne(query);
+    if(!pt){ status.textContent = `「${query}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
+    waypoints.push({name: display, ...pt});
     done++;
     if(done < total) await sleep(1100);
   }
 
-  for(const name of destNames){
-    status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
-    const pt = await geocodeOne(name);
-    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
-    destinations.push({name, ...pt});
+  for(const raw of destNames){
+    const {display, query} = splitDisplayAndQuery(raw);
+    status.textContent = `「${query}」を検索中…(${done+1}/${total})`;
+    const pt = await geocodeOne(query);
+    if(!pt){ status.textContent = `「${query}」が見つかりませんでした。英語表記(ローマ字)や別の綴りで試してください。`; btn.disabled=false; return; }
+    destinations.push({name: display, ...pt});
     done++;
     if(done < total) await sleep(1100);
   }
