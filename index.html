@@ -94,7 +94,7 @@
   #customRoutePanel{flex:0 0 auto;background:var(--navy-800);border:1px solid var(--brass);border-radius:4px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
   #customRoutePanel .cr-row{display:flex;flex-direction:column;gap:3px;}
   #customRoutePanel label{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--brass);letter-spacing:.06em;}
-  #customRoutePanel textarea{background:var(--navy-900);color:var(--parchment);border:1px solid var(--navy-700);border-radius:4px;padding:6px 8px;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;resize:vertical;}
+  #customRoutePanel textarea, #customRoutePanel input[type=text]{background:var(--navy-900);color:var(--parchment);border:1px solid var(--navy-700);border-radius:4px;padding:6px 8px;font-family:'Noto Sans JP',sans-serif;font-size:.78rem;resize:vertical;}
   #customRoutePanel .cr-actions{display:flex;align-items:center;gap:10px;}
   #customRoutePanel button{background:var(--stamp-red);color:#fff;border:none;border-radius:4px;padding:6px 14px;font-size:.78rem;cursor:pointer;font-weight:700;}
   #customRoutePanel button:disabled{opacity:.5;cursor:default;}
@@ -188,12 +188,11 @@
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
         <div id="customRoutePanel" style="display:none;">
           <div class="cr-row">
-            <label>関門(経由地点)‒ 出発から順に1行に1つ・曲がるルートもそのまま反映されます</label>
-            <textarea id="customWaypointsInput" rows="2" placeholder="例:&#10;ハルトゥーム&#10;ワドメダニ&#10;カッサラ"></textarea>
-            <p style="margin:2px 0 0;font-size:.7rem;color:var(--ink-dim);">※ 教員のプロンプトで設定した関門の数・順番とそろえて入力すると、AIが「第◯関門」と言った時に生徒がこの地図で同じ地点をすぐ選べます。</p>
+            <label>出発地点(プロンプトの「設定1」と同じ地名を入力)</label>
+            <input type="text" id="customStartInput" placeholder="例:ハルトゥーム">
           </div>
           <div class="cr-row">
-            <label>目的地(1行に1つ ‒ 複数入力すると候補地点として全て地図に表示されます)</label>
+            <label>目的地(プロンプトの「設定2」と同じ地名を入力・1行に1つ、複数候補も可)</label>
             <textarea id="customDestinationsInput" rows="2" placeholder="例:&#10;ポートスーダン港&#10;エチオピア国境"></textarea>
           </div>
           <div class="cr-actions">
@@ -911,10 +910,15 @@ function drawCrisisRoute(){
   }
 
   const waypointPts = scenario.waypoints.map(w=>[w.lat,w.lon]);
-  // 衛星写真・砂漠地帯の背景では明るい真鍮色だけだと視認しづらいため、
-  // 濃色の縁取り(casing)を下に敷いてから本線を重ねる(地図の背景色に依らず見えるように)。
-  window.routeLineCasing = L.polyline(waypointPts, {color:'#0d151f', weight:7, opacity:0.85}).addTo(window.worldMap);
-  window.routeLine = L.polyline(waypointPts, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
+  // 経由地が1点(出発地のみ)の場合は線にならないため、本線は経由地が2つ以上
+  // あるとき(プリセットルート)だけ描く。カスタムルートは出発→各目的地への
+  // 破線(下記)だけで経路を表す。
+  if(waypointPts.length >= 2){
+    // 衛星写真・砂漠地帯の背景では明るい真鍮色だけだと視認しづらいため、
+    // 濃色の縁取り(casing)を下に敷いてから本線を重ねる(地図の背景色に依らず見えるように)。
+    window.routeLineCasing = L.polyline(waypointPts, {color:'#0d151f', weight:7, opacity:0.85}).addTo(window.worldMap);
+    window.routeLine = L.polyline(waypointPts, {color:'#d4ab6f', weight:3, dashArray:'6,5'}).addTo(window.worldMap);
+  }
 
   scenario.waypoints.forEach((wp,i)=>{
     const marker = L.circleMarker([wp.lat,wp.lon], {radius:6, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
@@ -959,24 +963,24 @@ async function geocodeOne(name){
 async function applyCustomRoute(){
   const btn = document.getElementById('customRouteApplyBtn');
   const status = document.getElementById('customRouteStatus');
-  const waypointNames = document.getElementById('customWaypointsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const startName = document.getElementById('customStartInput').value.trim();
   const destNames = document.getElementById('customDestinationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(waypointNames.length === 0 || destNames.length === 0){
-    status.textContent = '出発からの関門(経由地点)を1つ以上、目的地を1つ以上入力してください。';
+  if(!startName || destNames.length === 0){
+    status.textContent = '出発地点と、目的地を1つ以上入力してください。';
     return;
   }
   btn.disabled = true;
-  const total = waypointNames.length + destNames.length;
-  const waypoints = [], destinations = [];
+  const total = 1 + destNames.length;
+  const destinations = [];
   let done = 0;
-  for(const name of waypointNames){
-    status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
-    const pt = await geocodeOne(name);
-    if(!pt){ status.textContent = `「${name}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
-    waypoints.push({name, ...pt});
-    done++;
-    if(done < total) await sleep(1100);
-  }
+
+  status.textContent = `「${startName}」を検索中…(${done+1}/${total})`;
+  const startPt = await geocodeOne(startName);
+  if(!startPt){ status.textContent = `「${startName}」が見つかりませんでした。地名の表記を変えて試してください。`; btn.disabled=false; return; }
+  const waypoints = [{name: startName, ...startPt}];
+  done++;
+  if(done < total) await sleep(1100);
+
   for(const name of destNames){
     status.textContent = `「${name}」を検索中…(${done+1}/${total})`;
     const pt = await geocodeOne(name);
@@ -990,7 +994,7 @@ async function applyCustomRoute(){
   drawCrisisRoute();
   renderFlashpoints();
   renderWeather();
-  status.textContent = `✅ 関門${waypoints.length}件・目的地${destinations.length}件を地図に反映しました。`;
+  status.textContent = `✅ 出発地点・目的地${destinations.length}件を地図に反映しました。`;
   btn.disabled = false;
 }
 document.getElementById('customRouteApplyBtn').addEventListener('click', applyCustomRoute);
