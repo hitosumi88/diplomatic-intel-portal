@@ -188,25 +188,9 @@
       <div class="tab-pane active" id="tab-earth" style="gap:6px;">
         <div id="customRoutePanel" style="display:none;">
           <div class="cr-row">
-            <label>📋 一括貼り付け(AIが出力したコードブロックの地点一覧をそのまま貼り付け ‒ 貼り付けると自動で下に振り分けます)</label>
-            <textarea id="customBulkInput" rows="3" placeholder="例:&#10;ハルトゥーム(Khartoum)&#10;ワドメダニ(Wad Madani)&#10;カッサラ(Kassala)&#10;ポートスーダン(Port Sudan)"></textarea>
-            <div class="cr-actions">
-              <button id="customBulkDistributeBtn" type="button">⬇ 下の欄に自動入力</button>
-              <span class="cr-status" id="customBulkStatus"></span>
-            </div>
-          </div>
-          <div class="cr-row">
-            <label>出発地点(プロンプトの「設定1」と同じ地名を入力)</label>
-            <input type="text" id="customStartInput" placeholder="例:ハルトゥーム">
-          </div>
-          <div class="cr-row">
-            <label>途中の関門(経由地点)‒ 出発から順に1行に1つ(空欄でも可)</label>
-            <textarea id="customWaypointsInput" rows="2" placeholder="例:&#10;ワドメダニ&#10;カッサラ"></textarea>
-            <p style="margin:2px 0 0;font-size:.7rem;color:var(--ink-dim);">※ 上の「一括貼り付け」を使わず、この欄に直接入力・修正することもできます。</p>
-          </div>
-          <div class="cr-row">
-            <label>目的地(プロンプトの「設定2」と同じ地名を入力・1行に1つ、複数候補も可)</label>
-            <textarea id="customDestinationsInput" rows="2" placeholder="例:&#10;ポートスーダン港&#10;エチオピア国境"></textarea>
+            <label>出発地点〜目的地をまとめて貼り付け(1行目=出発地点、最終行=目的地、間の行=途中の関門)</label>
+            <textarea id="customRouteInput" rows="5" placeholder="例:&#10;ハルトゥーム(Khartoum)&#10;ワドメダニ(Wad Madani)&#10;カッサラ(Kassala)&#10;ポートスーダン(Port Sudan)"></textarea>
+            <p style="margin:2px 0 0;font-size:.7rem;color:var(--ink-dim);">※ 目的地の候補を複数示したい場合は、1行空けてから候補地を1行に1つ並べてください。</p>
           </div>
           <div class="cr-actions">
             <button id="customRouteApplyBtn">🗺️ 地図に反映</button>
@@ -973,14 +957,28 @@ async function geocodeOne(name){
   }catch(e){ /* 下のnullで呼び出し元がエラー表示する */ }
   return null;
 }
+// 1つの貼り付け欄から 出発地点／途中の関門／目的地(候補) を読み取る。
+// 空行がある場合は、空行より前を「出発地点+経由地」、空行より後ろを「目的地候補(複数可)」として扱う。
+// 空行がなければ、最終行だけを目的地として扱う(経由地なしの出発地点→目的地もこれで成立する)。
+function parseCustomRouteInput(raw){
+  const blocks = raw.split(/\n\s*\n/);
+  let mainLines, destNames;
+  if(blocks.length >= 2){
+    mainLines = blocks[0].split('\n').map(s=>s.trim()).filter(Boolean);
+    destNames = blocks.slice(1).join('\n').split('\n').map(s=>s.trim()).filter(Boolean);
+  } else {
+    const lines = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+    mainLines = lines.slice(0, -1);
+    destNames = lines.length ? [lines[lines.length-1]] : [];
+  }
+  return {startName: mainLines[0] || '', midNames: mainLines.slice(1), destNames};
+}
 async function applyCustomRoute(){
   const btn = document.getElementById('customRouteApplyBtn');
   const status = document.getElementById('customRouteStatus');
-  const startName = document.getElementById('customStartInput').value.trim();
-  const midNames = document.getElementById('customWaypointsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const destNames = document.getElementById('customDestinationsInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const {startName, midNames, destNames} = parseCustomRouteInput(document.getElementById('customRouteInput').value);
   if(!startName || destNames.length === 0){
-    status.textContent = '出発地点と、目的地を1つ以上入力してください。';
+    status.textContent = '出発地点〜目的地まで、最低2行(2地点)貼り付けてください。';
     return;
   }
   btn.disabled = true;
@@ -1016,27 +1014,6 @@ async function applyCustomRoute(){
   btn.disabled = false;
 }
 document.getElementById('customRouteApplyBtn').addEventListener('click', applyCustomRoute);
-
-// 「一括貼り付け」欄の内容を 出発地点(1行目)／途中の関門(中間行)／目的地(最終行) に振り分ける。
-// AIが出力するコードブロック(6行想定だが行数は可変でよい)をそのまま貼り付けるための入口。
-function distributeBulkInput(){
-  const bulkStatus = document.getElementById('customBulkStatus');
-  const lines = document.getElementById('customBulkInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(lines.length < 2){
-    bulkStatus.textContent = '出発地点〜目的地まで、最低2行(2地点)貼り付けてください。';
-    return;
-  }
-  const start = lines[0];
-  const dest = lines[lines.length-1];
-  const mid = lines.slice(1, -1);
-  document.getElementById('customStartInput').value = start;
-  document.getElementById('customWaypointsInput').value = mid.join('\n');
-  document.getElementById('customDestinationsInput').value = dest;
-  const midNote = mid.length > 0 ? `2〜${lines.length-1}行目(${mid.length}件)を途中の関門、` : '';
-  bulkStatus.textContent = `✅ 1行目を出発地点、${midNote}${lines.length}行目を目的地に自動入力しました。内容を確認して「地図に反映」を押してください。`;
-}
-document.getElementById('customBulkDistributeBtn').addEventListener('click', distributeBulkInput);
-document.getElementById('customBulkInput').addEventListener('paste', ()=>{ setTimeout(distributeBulkInput, 0); });
 crisisRouteSelect.addEventListener('change', ()=>{
   const isCustom = crisisRouteSelect.value === 'custom';
   document.getElementById('customRoutePanel').style.display = isCustom ? 'flex' : 'none';
