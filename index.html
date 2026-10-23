@@ -116,7 +116,15 @@
   footer .memobox{display:flex;align-items:center;gap:10px;background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;padding:6px 10px;}
   footer label{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--brass);white-space:nowrap;}
   footer textarea{flex:1;resize:none;background:transparent;border:none;color:var(--parchment);font-family:'Noto Sans JP',sans-serif;font-size:.8rem;outline:none;height:22px;line-height:22px;}
-  #worldMap{width:100%;height:100%;flex:1 1 auto;min-height:0;border-radius:4px;background:var(--navy-800);}
+  #mapFullscreenWrap{position:relative;flex:1 1 auto;min-height:0;display:flex;}
+  #worldMap{width:100%;height:100%;border-radius:4px;background:var(--navy-800);}
+  #mapFullscreenWrap:fullscreen, #mapFullscreenWrap:-webkit-full-screen{background:var(--navy-950);}
+  #mapFullscreenWrap:fullscreen #worldMap, #mapFullscreenWrap:-webkit-full-screen #worldMap{border-radius:0;}
+  #mapFullscreenBtn{position:absolute;bottom:10px;right:10px;z-index:1000;width:36px;height:36px;
+    background:var(--navy-900);color:var(--parchment);border:1px solid var(--brass);border-radius:4px;
+    font-size:1.15rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 5px rgba(0,0,0,.5);}
+  #mapFullscreenBtn:hover{background:var(--navy-800);}
   .leaflet-control-layers{background:var(--navy-900) !important;color:var(--ink) !important;border:1px solid var(--brass) !important;font-size:.75rem;}
   .leaflet-control-layers-toggle{filter:invert(1);}
   #tab-earth{height:100%;}
@@ -205,7 +213,10 @@
             <span class="cr-status" id="customRouteStatus"></span>
           </div>
         </details>
-        <div id="worldMap"></div>
+        <div id="mapFullscreenWrap">
+          <div id="worldMap"></div>
+          <button id="mapFullscreenBtn" type="button" title="全画面表示">⛶</button>
+        </div>
         <div style="display:flex;gap:6px;flex:0 0 auto;">
           <button id="infraBtn" onclick="loadInfra()" style="flex:1;background:var(--navy-800);border:1px solid var(--brass);color:var(--parchment);border-radius:4px;padding:8px;font-size:.78rem;cursor:pointer;">⛏️✈️⚓ 今の表示範囲の鉱山・空港・港を表示</button>
         </div>
@@ -725,6 +736,43 @@ L.control.layers(
   {"気候区分(ケッペン)": climateOverlay},
   {position:'topright', collapsed:true}
 ).addTo(window.worldMap);
+
+/* ===== 地図の全画面表示(交渉モード・危機管理モードで地図要素は共通なので両モードで使える) ===== */
+(function(){
+  const wrap = document.getElementById('mapFullscreenWrap');
+  const btn = document.getElementById('mapFullscreenBtn');
+  // ブラウザによって未実装/プレフィックス付きのことがあるため、使える実装を探す。
+  const requestFs = wrap.requestFullscreen || wrap.webkitRequestFullscreen;
+  const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
+  function currentFsElement(){
+    return document.fullscreenElement || document.webkitFullscreenElement;
+  }
+  if(!requestFs){
+    btn.style.display = 'none'; // この端末・ブラウザでは全画面表示に非対応
+    return;
+  }
+  function isActive(){ return currentFsElement() === wrap; }
+  function updateIcon(){
+    btn.textContent = isActive() ? '✕' : '⛶';
+    btn.title = isActive() ? '全画面表示を終了' : '全画面表示';
+  }
+  btn.addEventListener('click', ()=>{
+    if(isActive()){
+      exitFs.call(document);
+    } else {
+      // 古いWebKit実装はPromiseを返さないことがあるため、返り値の有無を確認してから.catchする。
+      const p = requestFs.call(wrap);
+      if(p && typeof p.catch === 'function') p.catch(()=>{ /* 一部端末は拒否されることがある */ });
+    }
+  });
+  ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>{
+    document.addEventListener(ev, ()=>{
+      updateIcon();
+      // 全画面の出入りでコンテナサイズが変わるため、Leafletにタイルを再計算させる。
+      setTimeout(()=>{ window.worldMap.invalidateSize(); }, 60);
+    });
+  });
+})();
 
 function setCard(id, url, {disabled=false}={}){
   const el = document.getElementById(id);
