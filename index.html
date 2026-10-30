@@ -180,11 +180,13 @@
     <span id="countryStatus"></span>
     <datalist id="countryList"></datalist>
   </div>
+  <div id="orgInputHint" style="margin-top:3px;font-size:.68rem;color:var(--ink-dim);">※ EU・ASEAN・MERCOSURなどの国際組織は、英字表記(略称)で入力してください。</div>
   <div class="mission">
     <span contenteditable="true" spellcheck="false" id="missionText">交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。</span>
     <span class="stamp">要 確認 ‒ 一次情報</span>
   </div>
   <div id="geoNote" style="margin-top:6px;font-size:.76rem;background:var(--navy-800);border:1px solid var(--navy-700);border-left:3px solid var(--stamp-red);border-radius:4px;padding:6px 10px;color:var(--parchment);"></div>
+  <div id="orgNote" style="display:none;margin-top:6px;font-size:.76rem;background:var(--navy-800);border:1px solid var(--brass);border-left:3px solid var(--brass);border-radius:4px;padding:6px 10px;color:var(--parchment);"></div>
   <details class="flashpoints" id="flashpointsBox">
     <summary>🕵️ 歴史的対立・因縁ポイント(準備メモ ‒ 頭の片隅に)</summary>
     <div id="flashpointsBody"></div>
@@ -237,8 +239,8 @@
           <a class="card wide" href="https://rtais.wto.org/" target="_blank" rel="noopener"><span class="name">WTO 地域貿易協定データベース(RTA-IS)</span><span class="desc">世界の二国間・多国間協定を検索(英語)</span></a>
           <a class="card wide" href="https://www.customs.go.jp/tariff/index.htm" target="_blank" rel="noopener"><span class="name">財務省 実行関税率表</span><span class="desc">日本の品目別関税率(自国=日本の時に便利)</span></a>
           <a class="card risk wide" id="lnk-factbook"><span class="name">CIA World Factbook(相手国)</span><span class="desc">政治体制・経済・治安の概況を英語で確認</span></a>
-          <a class="card wide" id="lnk-org-wiki-home"><span class="name">自国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
-          <a class="card wide" id="lnk-org-wiki-partner"><span class="name">相手国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
+          <a class="card wide" id="lnk-org-wiki-home"><span class="name">自国について(Wikipedia)</span><span class="desc">EU/MERCOSUR/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
+          <a class="card wide" id="lnk-org-wiki-partner"><span class="name">相手国について(Wikipedia)</span><span class="desc">EU/MERCOSUR/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
           <a class="card wide" id="lnk-org-stats-home"><span class="name">自国の域内公式統計</span><span class="desc">EU(Eurostat)・ASEAN(ASEANstats)など、域内統計ポータルを持つ組織のみ有効</span></a>
           <a class="card wide" id="lnk-org-stats-partner"><span class="name">相手国の域内公式統計</span><span class="desc">EU(Eurostat)・ASEAN(ASEANstats)など、域内統計ポータルを持つ組織のみ有効</span></a>
           <a class="card risk wide" href="https://www.anzen.mofa.go.jp/riskmap/index.html" target="_blank" rel="noopener"><span class="name">外務省 海外安全ホームページ(地図から選択)</span><span class="desc">危険情報レベル・渡航リスクを国ごとに確認</span></a>
@@ -456,7 +458,7 @@ const COUNTRY_DB = [
 // 関税同盟ではなく特恵関税の「受益国グループ」扱いで、独自の貿易統計(isreporter)を持たないため、
 // iso3・climateSlug・factbookSlugはすべて空にしてそれらのカードを非表示にし、代わりにwikiSlugで
 // Wikipedia解説へのカードを出す(render()側で対応)。
-["メルコスール","","","",-25,-58,4,"南米南部共同市場"],
+["MERCOSUR","","","",-25,-58,4,"南米南部共同市場"],
 ["ハイチ","hti","haiti","haiti",19,-72.3,7],["ドミニカ共和国","dom","dominican-republic","dominican-republic",19,-70.5,7],
 ["ジャマイカ","jam","jamaica","jamaica",18.1,-77.3,8],["ガーナ","gha","ghana","ghana",8,-1,6],
 ["コートジボワール","civ","cote-divoire","cote-d-ivoire",7.5,-5.5,6],["セネガル","sen","senegal","senegal",14.5,-14.5,6],
@@ -891,6 +893,37 @@ async function geocodeFallback(name){
   }
 }
 
+// EU/ASEAN/MERCOSURのような複数国の国際組織かどうかを判定する。
+// iso3を持たない(=貿易統計の集計対象がない)か、wikiSlug/statsUrlが設定されているものを組織とみなす。
+function isOrgEntry(e){
+  return !!(e && (!e.iso3 || e.wikiSlug || e.statsUrl));
+}
+function describeOrgDataLocation(entry){
+  const spots = [];
+  if(entry.iso3) spots.push('「貿易統計」タブの貿易統計カード');
+  if(entry.factbookSlug) spots.push('「関税・渡航リスク」タブのCIA Factbookカード');
+  if(entry.wikiSlug) spots.push('「関税・渡航リスク」タブのWikipedia解説カード');
+  if(entry.statsUrl) spots.push('「関税・渡航リスク」タブの域内公式統計カード');
+  return spots;
+}
+function renderOrgNote(homeName, home, partnerName, partner){
+  const note = document.getElementById('orgNote');
+  const parts = [];
+  if(isOrgEntry(home)){
+    const spots = describeOrgDataLocation(home);
+    parts.push(`🏛️ 自国「${homeName}」は複数国の国際組織です。${spots.length ? spots.join('・') + 'で情報を確認できます。' : '対応データが見つかりませんでした。'}`);
+  }
+  if(isOrgEntry(partner)){
+    const spots = describeOrgDataLocation(partner);
+    parts.push(`🏛️ 相手国「${partnerName}」は複数国の国際組織です。${spots.length ? spots.join('・') + 'で情報を確認できます。' : '対応データが見つかりませんでした。'}`);
+  }
+  if(parts.length){
+    note.innerHTML = parts.join('<br>');
+    note.style.display = 'block';
+  } else {
+    note.style.display = 'none';
+  }
+}
 function render(){
   const homeName = homeInput.value.trim();
   const partnerName = partnerInput.value.trim();
@@ -903,6 +936,8 @@ function render(){
   } else if(partnerName){
     geocodeFallback(partnerName);
   }
+
+  renderOrgNote(homeName, home, partnerName, partner);
 
   // iso3・climateSlug・factbookSlug・owidEnergySlugは、メルコスール/OAPECのように
   // 貿易統計上の単独集計対象を持たない国際組織では空文字にしてあるため、各カードはその
