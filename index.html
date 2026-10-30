@@ -419,6 +419,11 @@ const COUNTRY_DB = [
 ["フィンランド","fin","finland","finland",64,26,4],["デンマーク","dnk","denmark","denmark",56,10,6],
 ["スイス","che","switzerland","switzerland",47,8,7],["オーストリア","aut","austria","austria",47.5,14,6],
 ["チェコ","cze","czechia","czechia",50,15,6],["アイルランド","irl","ireland","ireland",53,-8,6],
+// EUは単一国家ではなく国際組織(関税同盟)。WITS・CIA Factbookでは単独の集計対象として
+// 扱われているためiso3・factbookSlugは実在するコードを使うが、気候は加盟27カ国でまったく
+// 異なるため climateSlug は空にして「世界銀行 気候ポータル」カードを出さないようにする
+// (render()側で climateSlug が空なら非表示にする扱いになっている)。
+["EU","eun","","european-union",50,10,4],
 ["ジョージア","geo","georgia","georgia",42,43,6],["アルメニア","arm","armenia","armenia",40,45,7],
 ["アゼルバイジャン","aze","azerbaijan","azerbaijan",40.5,47.5,6],["カザフスタン","kaz","kazakhstan","kazakhstan",48,67,4],
 ["ウズベキスタン","uzb","uzbekistan","uzbekistan",41,64,5],["タジキスタン","tjk","tajikistan","tajikistan",38.5,71,6],
@@ -498,6 +503,7 @@ const JAPAN_EPA = {
   "ドイツ": "発効済み(2019年、日EU・EPA)",
   "フランス": "発効済み(2019年、日EU・EPA)",
   "イタリア": "発効済み(2019年、日EU・EPA)",
+  "EU": "発効済み(2019年、日EU・EPA)",
   "アメリカ": "限定的な貿易協定のみ(2020年、日米貿易協定。包括的EPAではない)",
   "イギリス": "発効済み(2021年、日英EPA)",
   "中国": "発効済み(2022年、RCEP。二国間EPAは未締結)",
@@ -881,18 +887,15 @@ function render(){
   }
   setCard('lnk-jetro', 'https://www.jetro.go.jp/world/', {disabled: homeName !== "日本"});
 
-  if(partner){
-    setCard('lnk-climate', `https://climateknowledgeportal.worldbank.org/country/${partner.climateSlug}`);
-    setCard('lnk-factbook', `https://www.cia.gov/the-world-factbook/countries/${partner.factbookSlug}/`);
-  } else {
-    setCard('lnk-climate','',{disabled:true});
-    setCard('lnk-factbook','',{disabled:true});
-  }
+  // climateSlug・owidEnergySlugはEUのような国際組織では意味を持たない(加盟国ごとに
+  // 気候・エネルギー事情が異なる)ため空文字にしてあり、その場合はカード自体を無効化する。
+  setCard('lnk-climate', (partner && partner.climateSlug) ? `https://climateknowledgeportal.worldbank.org/country/${partner.climateSlug}` : '', {disabled: !(partner && partner.climateSlug)});
+  setCard('lnk-factbook', partner ? `https://www.cia.gov/the-world-factbook/countries/${partner.factbookSlug}/` : '', {disabled: !partner});
   setCard('lnk-oec-home', home ? `https://oec.world/en/profile/country/${home.iso3}` : '', {disabled: !home});
   setCard('lnk-oec-partner', partner ? `https://oec.world/en/profile/country/${partner.iso3}` : '', {disabled: !partner});
 
-  setCard('lnk-owid-energy-home', home ? `https://ourworldindata.org/energy/country/${home.owidEnergySlug}` : '', {disabled: !home});
-  setCard('lnk-owid-energy-partner', partner ? `https://ourworldindata.org/energy/country/${partner.owidEnergySlug}` : '', {disabled: !partner});
+  setCard('lnk-owid-energy-home', (home && home.owidEnergySlug) ? `https://ourworldindata.org/energy/country/${home.owidEnergySlug}` : '', {disabled: !(home && home.owidEnergySlug)});
+  setCard('lnk-owid-energy-partner', (partner && partner.owidEnergySlug) ? `https://ourworldindata.org/energy/country/${partner.owidEnergySlug}` : '', {disabled: !(partner && partner.owidEnergySlug)});
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
