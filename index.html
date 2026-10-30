@@ -239,6 +239,8 @@
           <a class="card risk wide" id="lnk-factbook"><span class="name">CIA World Factbook(相手国)</span><span class="desc">政治体制・経済・治安の概況を英語で確認</span></a>
           <a class="card wide" id="lnk-org-wiki-home"><span class="name">自国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
           <a class="card wide" id="lnk-org-wiki-partner"><span class="name">相手国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
+          <a class="card wide" id="lnk-org-stats-home"><span class="name">自国の域内公式統計</span><span class="desc">EU(Eurostat)・ASEAN(ASEANstats)など、域内統計ポータルを持つ組織のみ有効</span></a>
+          <a class="card wide" id="lnk-org-stats-partner"><span class="name">相手国の域内公式統計</span><span class="desc">EU(Eurostat)・ASEAN(ASEANstats)など、域内統計ポータルを持つ組織のみ有効</span></a>
           <a class="card risk wide" href="https://www.anzen.mofa.go.jp/riskmap/index.html" target="_blank" rel="noopener"><span class="name">外務省 海外安全ホームページ(地図から選択)</span><span class="desc">危険情報レベル・渡航リスクを国ごとに確認</span></a>
           <a class="card risk wide" href="https://www.anzen.mofa.go.jp/kiken_list.html" target="_blank" rel="noopener"><span class="name">外務省 危険情報一覧</span><span class="desc">レベル別に発出中の危険情報を一覧で確認</span></a>
         </div>
@@ -428,8 +430,19 @@ const COUNTRY_DB = [
 // EUは単一国家ではなく国際組織(関税同盟)。WITS・CIA Factbookでは単独の集計対象として
 // 扱われているためiso3・factbookSlugは実在するコードを使うが、気候は加盟27カ国でまったく
 // 異なるため climateSlug は空にして「世界銀行 気候ポータル」カードを出さないようにする
-// (render()側で climateSlug が空なら非表示にする扱いになっている)。
-["EU","eun","","european-union",50,10,4],
+// (render()側で climateSlug が空なら非表示にする扱いになっている)。9番目の要素(statsUrl)は
+// 域内統計を持つ組織用で、EUはEurostatの貿易統計データベースへ直接リンクする。
+["EU","eun","","european-union",50,10,4,"","https://ec.europa.eu/eurostat/web/international-trade-in-goods/database"],
+// 高校地理の教科書で扱われる主要な地域統合組織。WITSの集計対象国・グループ一覧(API確認済み)では
+// いずれも独自の貿易統計(isreporter=1)を持たず、ASEAN・NAFTA/USMCAは「受益国グループ」止まり、
+// OPEC・APEC・AUに至っては一覧に存在しないため、iso3・climateSlug・factbookSlugは空にしてEUと
+// 同じ理屈でカードを無効化し、wikiSlugでWikipedia解説へのカードを出す。ASEANには公式統計ポータル
+// (ASEANstats、稼働確認済み)があるためEUと同様statsUrlも設定する。
+["ASEAN","","","",5,110,4,"東南アジア諸国連合","https://data.aseanstats.org/"],
+["USMCA","","","",40,-100,3,"アメリカ・メキシコ・カナダ協定"],
+["OPEC","","","",25,45,3,"石油輸出国機構"],
+["APEC","","","",20,160,2,"アジア太平洋経済協力"],
+["AU","","","",2,20,3,"アフリカ連合"],
 ["ジョージア","geo","georgia","georgia",42,43,6],["アルメニア","arm","armenia","armenia",40,45,7],
 ["アゼルバイジャン","aze","azerbaijan","azerbaijan",40.5,47.5,6],["カザフスタン","kaz","kazakhstan","kazakhstan",48,67,4],
 ["ウズベキスタン","uzb","uzbekistan","uzbekistan",41,64,5],["タジキスタン","tjk","tajikistan","tajikistan",38.5,71,6],
@@ -469,6 +482,7 @@ COUNTRY_DB.forEach(c=>{
     iso3:c[1], climateSlug:c[2], factbookSlug:c[3], center:[c[4],c[5]], zoom:c[6],
     owidEnergySlug: OWID_ENERGY_SLUG_OVERRIDES[c[0]] || c[2],
     wikiSlug: c[7] || null, // メルコスール・OAPECのような、貿易統計上の集計対象を持たない組織の説明用(任意8番目の要素)
+    statsUrl: c[8] || null, // EU(Eurostat)・ASEAN(ASEANstats)のような、域内公式統計ポータルを持つ組織用(任意9番目の要素)
   };
 });
 
@@ -915,6 +929,8 @@ function render(){
   // メルコスール・OAPECのように貿易統計の個別データを持たない組織向けの、Wikipedia解説カード。
   setCard('lnk-org-wiki-home', (home && home.wikiSlug) ? `https://ja.wikipedia.org/wiki/${encodeURIComponent(home.wikiSlug)}` : '', {disabled: !(home && home.wikiSlug)});
   setCard('lnk-org-wiki-partner', (partner && partner.wikiSlug) ? `https://ja.wikipedia.org/wiki/${encodeURIComponent(partner.wikiSlug)}` : '', {disabled: !(partner && partner.wikiSlug)});
+  setCard('lnk-org-stats-home', (home && home.statsUrl) ? home.statsUrl : '', {disabled: !(home && home.statsUrl)});
+  setCard('lnk-org-stats-partner', (partner && partner.statsUrl) ? partner.statsUrl : '', {disabled: !(partner && partner.statsUrl)});
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
