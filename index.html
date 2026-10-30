@@ -237,6 +237,8 @@
           <a class="card wide" href="https://rtais.wto.org/" target="_blank" rel="noopener"><span class="name">WTO 地域貿易協定データベース(RTA-IS)</span><span class="desc">世界の二国間・多国間協定を検索(英語)</span></a>
           <a class="card wide" href="https://www.customs.go.jp/tariff/index.htm" target="_blank" rel="noopener"><span class="name">財務省 実行関税率表</span><span class="desc">日本の品目別関税率(自国=日本の時に便利)</span></a>
           <a class="card risk wide" id="lnk-factbook"><span class="name">CIA World Factbook(相手国)</span><span class="desc">政治体制・経済・治安の概況を英語で確認</span></a>
+          <a class="card wide" id="lnk-org-wiki-home"><span class="name">自国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
+          <a class="card wide" id="lnk-org-wiki-partner"><span class="name">相手国について(Wikipedia)</span><span class="desc">EU/メルコスール/OAPECのような国際組織は、貿易統計の代わりにこちらで概要・加盟国を確認</span></a>
           <a class="card risk wide" href="https://www.anzen.mofa.go.jp/riskmap/index.html" target="_blank" rel="noopener"><span class="name">外務省 海外安全ホームページ(地図から選択)</span><span class="desc">危険情報レベル・渡航リスクを国ごとに確認</span></a>
           <a class="card risk wide" href="https://www.anzen.mofa.go.jp/kiken_list.html" target="_blank" rel="noopener"><span class="name">外務省 危険情報一覧</span><span class="desc">レベル別に発出中の危険情報を一覧で確認</span></a>
         </div>
@@ -394,6 +396,10 @@ const COUNTRY_DB = [
 ["ロシア","rus","russia","russia",61,90,3],["カナダ","can","canada","canada",56,-106,3],
 ["メキシコ","mex","mexico","mexico",23,-102,5],["南アフリカ","zaf","south-africa","south-africa",-29,24,5],
 ["サウジアラビア","sau","saudi-arabia","saudi-arabia",24,45,5],["アラブ首長国連邦","are","united-arab-emirates","united-arab-emirates",24,54,6],
+// OAPEC(アラブ石油輸出国機構)。関税同盟ではなく産油国の政策協調組織で、WITSの集計対象一覧
+// (API確認済み)には該当エントリ自体が存在しないため、iso3・climateSlug・factbookSlugは空にして
+// それらのカードを非表示にし、代わりにwikiSlugでWikipedia解説へのカードを出す(render()側で対応)。
+["OAPEC","","","",25,40,4,"アラブ石油輸出国機構"],
 ["トルコ","tur","turkey","turkey",39,35,5],["エジプト","egy","egypt","egypt",26,30,5],
 ["ナイジェリア","nga","nigeria","nigeria",9,8,5],["ケニア","ken","kenya","kenya",1,38,5],
 ["エチオピア","eth","ethiopia","ethiopia",9,40,5],["スーダン","sdn","sudan","sudan",15,30,5],
@@ -433,6 +439,11 @@ const COUNTRY_DB = [
 ["ベネズエラ","ven","venezuela","venezuela",8,-66,5],["エクアドル","ecu","ecuador","ecuador",-1.8,-78,6],
 ["ボリビア","bol","bolivia","bolivia",-17,-65,5],["パラグアイ","pry","paraguay","paraguay",-23,-58,6],
 ["ウルグアイ","ury","uruguay","uruguay",-33,-56,6],["キューバ","cub","cuba","cuba",21.5,-79.5,6],
+// メルコスール(アルゼンチン・ブラジル・パラグアイ・ウルグアイ)。WITSの集計対象一覧(API確認済み)では
+// 関税同盟ではなく特恵関税の「受益国グループ」扱いで、独自の貿易統計(isreporter)を持たないため、
+// iso3・climateSlug・factbookSlugはすべて空にしてそれらのカードを非表示にし、代わりにwikiSlugで
+// Wikipedia解説へのカードを出す(render()側で対応)。
+["メルコスール","","","",-25,-58,4,"南米南部共同市場"],
 ["ハイチ","hti","haiti","haiti",19,-72.3,7],["ドミニカ共和国","dom","dominican-republic","dominican-republic",19,-70.5,7],
 ["ジャマイカ","jam","jamaica","jamaica",18.1,-77.3,8],["ガーナ","gha","ghana","ghana",8,-1,6],
 ["コートジボワール","civ","cote-divoire","cote-d-ivoire",7.5,-5.5,6],["セネガル","sen","senegal","senegal",14.5,-14.5,6],
@@ -457,6 +468,7 @@ COUNTRY_DB.forEach(c=>{
   COUNTRY_MAP[c[0]] = {
     iso3:c[1], climateSlug:c[2], factbookSlug:c[3], center:[c[4],c[5]], zoom:c[6],
     owidEnergySlug: OWID_ENERGY_SLUG_OVERRIDES[c[0]] || c[2],
+    wikiSlug: c[7] || null, // メルコスール・OAPECのような、貿易統計上の集計対象を持たない組織の説明用(任意8番目の要素)
   };
 });
 
@@ -878,7 +890,12 @@ function render(){
     geocodeFallback(partnerName);
   }
 
-  if(home && partner){
+  // iso3・climateSlug・factbookSlug・owidEnergySlugは、メルコスール/OAPECのように
+  // 貿易統計上の単独集計対象を持たない国際組織では空文字にしてあるため、各カードはその
+  // 項目が実際にある時だけ有効化する(EUのように一部だけ実在するケースにも対応できる)。
+  const homeHasIso3 = !!(home && home.iso3);
+  const partnerHasIso3 = !!(partner && partner.iso3);
+  if(homeHasIso3 && partnerHasIso3){
     setCard('lnk-wits', `https://wits.worldbank.org/CountryProfile/en/Country/${home.iso3}/Year/LTST/TradeFlow/EXPIMP/Partner/${partner.iso3}`);
     setCard('lnk-oec', `https://oec.world/en/visualize/tree_map/hs92/export/${partner.iso3}/${home.iso3}/all/show/2022/`);
   } else {
@@ -887,15 +904,17 @@ function render(){
   }
   setCard('lnk-jetro', 'https://www.jetro.go.jp/world/', {disabled: homeName !== "日本"});
 
-  // climateSlug・owidEnergySlugはEUのような国際組織では意味を持たない(加盟国ごとに
-  // 気候・エネルギー事情が異なる)ため空文字にしてあり、その場合はカード自体を無効化する。
   setCard('lnk-climate', (partner && partner.climateSlug) ? `https://climateknowledgeportal.worldbank.org/country/${partner.climateSlug}` : '', {disabled: !(partner && partner.climateSlug)});
-  setCard('lnk-factbook', partner ? `https://www.cia.gov/the-world-factbook/countries/${partner.factbookSlug}/` : '', {disabled: !partner});
-  setCard('lnk-oec-home', home ? `https://oec.world/en/profile/country/${home.iso3}` : '', {disabled: !home});
-  setCard('lnk-oec-partner', partner ? `https://oec.world/en/profile/country/${partner.iso3}` : '', {disabled: !partner});
+  setCard('lnk-factbook', (partner && partner.factbookSlug) ? `https://www.cia.gov/the-world-factbook/countries/${partner.factbookSlug}/` : '', {disabled: !(partner && partner.factbookSlug)});
+  setCard('lnk-oec-home', homeHasIso3 ? `https://oec.world/en/profile/country/${home.iso3}` : '', {disabled: !homeHasIso3});
+  setCard('lnk-oec-partner', partnerHasIso3 ? `https://oec.world/en/profile/country/${partner.iso3}` : '', {disabled: !partnerHasIso3});
 
   setCard('lnk-owid-energy-home', (home && home.owidEnergySlug) ? `https://ourworldindata.org/energy/country/${home.owidEnergySlug}` : '', {disabled: !(home && home.owidEnergySlug)});
   setCard('lnk-owid-energy-partner', (partner && partner.owidEnergySlug) ? `https://ourworldindata.org/energy/country/${partner.owidEnergySlug}` : '', {disabled: !(partner && partner.owidEnergySlug)});
+
+  // メルコスール・OAPECのように貿易統計の個別データを持たない組織向けの、Wikipedia解説カード。
+  setCard('lnk-org-wiki-home', (home && home.wikiSlug) ? `https://ja.wikipedia.org/wiki/${encodeURIComponent(home.wikiSlug)}` : '', {disabled: !(home && home.wikiSlug)});
+  setCard('lnk-org-wiki-partner', (partner && partner.wikiSlug) ? `https://ja.wikipedia.org/wiki/${encodeURIComponent(partner.wikiSlug)}` : '', {disabled: !(partner && partner.wikiSlug)});
 }
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
