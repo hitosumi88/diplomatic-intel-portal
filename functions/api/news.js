@@ -4,28 +4,48 @@
 // APIキー不要・追加の有料サービスなし。
 
 export async function onRequestGet(context) {
-  const url = new URL(context.request.url);
+  const { request, waitUntil } = context;
+  const url = new URL(request.url);
   const q = (url.searchParams.get('q') || '').trim().slice(0, 100);
   if (!q) {
     return jsonResponse({ error: 'missing q' }, 400);
   }
 
+  // Google Newsの無料RSSは時々一時的な503を返すため、同じ検索語はCloudflareのエッジキャッシュに
+  // 乗せて再利用し(生徒が同じ国を選ぶたびに毎回叩かないようにする)、キャッシュが無い場合も
+  // 一度だけ短い間隔を置いて再試行してから失敗を返す。
+  const cache = caches.default;
+  const cacheKey = new Request(url.toString(), request);
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
   const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=ja&gl=JP&ceid=JP:ja`;
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(rssUrl, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaticIntelPortal/1.0; +https://diplomatic-intel-portal.pages.dev/)' },
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error(`upstream HTTP ${res.status}`);
-    const xml = await res.text();
-    const items = parseGoogleNewsRss(xml).slice(0, 10);
-    return jsonResponse({ query: q, items }, 200, 'public, max-age=600');
-  } catch (e) {
-    return jsonResponse({ error: 'fetch_failed', message: String(e && e.message || e) }, 502);
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(rssUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DiplomaticIntelPortal/1.0; +https://diplomatic-intel-portal.pages.dev/)' },
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`upstream HTTP ${res.status}`);
+      const xml = await res.text();
+      const items = parseGoogleNewsRss(xml).slice(0, 10);
+      const response = jsonResponse({ query: q, items }, 200, 'public, max-age=900');
+      waitUntil(cache.put(cacheKey, response.clone()));
+      return response;
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await sleep(400);
+    }
   }
+  return jsonResponse({ error: 'fetch_failed', message: String(lastErr && lastErr.message || lastErr) }, 502);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function jsonResponse(body, status, cacheControl) {
