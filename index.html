@@ -121,8 +121,9 @@
   footer .memobox{display:flex;align-items:center;gap:10px;background:var(--navy-900);border:1px solid var(--navy-700);border-radius:6px;padding:6px 10px;}
   footer label{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--brass);white-space:nowrap;}
   footer textarea{flex:1;resize:none;background:transparent;border:none;color:var(--parchment);font-family:'Noto Sans JP',sans-serif;font-size:.8rem;outline:none;height:22px;line-height:22px;}
-  #mapFullscreenWrap{position:relative;flex:1 1 auto;min-height:0;display:flex;}
-  #worldMap{width:100%;height:100%;border-radius:4px;background:var(--navy-800);}
+  #mapFullscreenWrap{position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+  #mapFullscreenWrap #euNetworkTabs{flex:0 0 auto;}
+  #worldMap{width:100%;height:100%;flex:1 1 auto;min-height:0;border-radius:4px;background:var(--navy-800);}
   #mapFullscreenWrap:fullscreen, #mapFullscreenWrap:-webkit-full-screen{background:var(--navy-950);}
   #mapFullscreenWrap:fullscreen #worldMap, #mapFullscreenWrap:-webkit-full-screen #worldMap{border-radius:0;}
   #mapFullscreenBtn{position:absolute;bottom:10px;right:10px;z-index:1000;width:36px;height:36px;
@@ -221,8 +222,8 @@
             <span class="cr-status" id="customRouteStatus"></span>
           </div>
         </details>
-        <div id="euNetworkTabs" class="tabs" style="display:none;flex:0 0 auto;"></div>
         <div id="mapFullscreenWrap">
+          <div id="euNetworkTabs" class="tabs" style="display:none;"></div>
           <div id="worldMap"></div>
           <button id="mapFullscreenBtn" type="button" title="全画面表示">⛶</button>
         </div>
