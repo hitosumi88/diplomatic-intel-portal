@@ -506,7 +506,7 @@ const ORG_NETWORK_CATEGORIES = [
 const ORG_NETWORK_EDGE_COLORS = { cooperation:'#5fae6b', conflict:'#c9603a' };
 
 const ORG_NETWORKS = {
-  // EU: GDP上位9か国
+  // EU: GDP上位9か国 + 非加盟だが関係の深いロシア(external:trueでマーカーを区別)
   EU: {
     countries: {
       "ドイツ":     {lat:52.52,   lon:13.405, info:"EU最大の経済大国・人口大国。自動車・機械工業の中心で「欧州の工場」とも呼ばれる。輸出依存度が高く、部品・資源・労働力の多くを近隣国からの供給に頼る。"},
@@ -518,6 +518,7 @@ const ORG_NETWORKS = {
       "ベルギー":   {lat:50.8503, lon:4.3517, info:"EU本部が置かれる「EUの首都」。アントウェルペン港を中心に化学工業・物流が発達し、周辺国への中継拠点としての役割を持つ。"},
       "スウェーデン":{lat:59.3293,lon:18.0686,info:"水力・風力など再生可能エネルギー比率が高い環境先進国。ICT産業も発達し、デジタル分野でEUをリードする。"},
       "アイルランド":{lat:53.3498,lon:-6.2603,info:"法人税率の低さからGoogleやAppleなど米国巨大IT企業の欧州拠点が集中するデジタル経済の中心地。一方で法人税を巡り他のEU加盟国と摩擦もある。"},
+      "ロシア":     {lat:55.7558, lon:37.6173, info:"EU非加盟だが、天然ガス供給や安全保障を通じてEUと深く関わる隣国。2022年のウクライナ侵攻以降、エネルギー・経済面での関係は協力から対立へ大きく転換した。", external:true},
     },
     edges: [
       {category:'agri', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'花き・乳製品・園芸作物を供給', detail:'オランダは国土が小さいながら施設園芸技術により世界第2位の農産物輸出国。地理的に近いドイツへ大量に出荷している。'},
@@ -540,6 +541,11 @@ const ORG_NETWORKS = {
       {category:'digital', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'労働力・人材の西欧への移動', detail:'ポーランドから多くの労働者がより高い賃金を求めてドイツなど西欧諸国へ移住しており、送り出し側は人材流出という課題を抱える。'},
       {category:'digital', from:'スペイン', to:'ドイツ', kind:'conflict', label:'若年層の雇用を求めた移動', detail:'南欧は若年失業率が高く、スペインの若者が雇用機会を求めてドイツなど北欧・西欧へ移住する傾向がある。'},
       {category:'digital', from:'ドイツ', to:'フランス', kind:'cooperation', label:'EUデジタル規制のルール作りで協力', detail:'GDPR(一般データ保護規則)やデジタル市場法など、EUのデジタル分野のルール形成でドイツ・フランスが主導的役割を果たしている。'},
+      {category:'energy', from:'ロシア', to:'ドイツ', kind:'conflict', label:'ノルドストリームを通じた天然ガス依存とその後の断絶', detail:'ドイツは長年ロシア産天然ガスに大きく依存してきたが、2022年のロシアによるウクライナ侵攻後はノルドストリームのガス供給が止まり、調達先の見直しを迫られた。'},
+      {category:'energy', from:'ロシア', to:'ポーランド', kind:'conflict', label:'NATO東側最前線としての安全保障上の緊張', detail:'ポーランドはロシア・ベラルーシと国境を接するNATO東側の最前線国で、ウクライナ侵攻以降、加盟国の中でも安全保障上の緊張が最も高い。'},
+      {category:'industry', from:'ロシア', to:'ドイツ', kind:'conflict', label:'先端技術・半導体の禁輸措置を巡る対立', detail:'EUはロシアに対し半導体や先端技術の輸出禁止などの経済制裁を実施しており、両国の産業面での結びつきは大きく断たれている。'},
+      {category:'digital', from:'ロシア', to:'ポーランド', kind:'conflict', label:'ウクライナ避難民受け入れの最前線', detail:'ロシアによるウクライナ侵攻に伴い、隣接するポーランドは数百万人規模のウクライナ避難民を受け入れる最前線となった。'},
+      {category:'agri', from:'ロシア', to:'ドイツ', kind:'conflict', label:'穀物・肥料輸出の混乱による価格高騰', detail:'ロシアは世界有数の小麦・肥料輸出国で、ウクライナ侵攻に伴う輸出混乱はEU域内の食料・肥料価格の高騰にもつながった。'},
     ],
   },
   // ASEAN: 加盟10か国すべて
@@ -1227,9 +1233,17 @@ function drawOrgNetwork(orgKey, categoryKey){
   const net = ORG_NETWORKS[orgKey];
   if(!net) return;
   Object.entries(net.countries).forEach(([name,c])=>{
-    const marker = L.circleMarker([c.lat,c.lon], {radius:8, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
-    marker.bindTooltip(name, {permanent:true, direction:'top', offset:[0,-6], className:'eu-net-label'});
-    marker.bindPopup(`<b>${name}</b><br>${c.info}`);
+    // c.external: 加盟国ではないが関係が深い国(例: EUに対するロシア)を、
+    // 加盟国と区別できるよう点線の縁取り・異なる配色で表示する。
+    const marker = L.circleMarker([c.lat,c.lon], {
+      radius:8,
+      color: c.external ? '#5a6b7a' : '#8c2f39',
+      fillColor: c.external ? '#b9c4cc' : '#e8e1cf',
+      fillOpacity:1, weight:2,
+      dashArray: c.external ? '3,3' : null,
+    }).addTo(window.worldMap);
+    marker.bindTooltip(name + (c.external ? '(非加盟)' : ''), {permanent:true, direction:'top', offset:[0,-6], className:'eu-net-label'});
+    marker.bindPopup(`<b>${name}${c.external ? ' <span style="color:var(--ink-dim);font-size:.8em;">(非加盟国)</span>' : ''}</b><br>${c.info}`);
     window.orgNetworkLayers.push(marker);
   });
   const edges = net.edges.filter(e => categoryKey === 'all' || e.category === categoryKey);
@@ -1237,10 +1251,17 @@ function drawOrgNetwork(orgKey, categoryKey){
     const from = net.countries[e.from], to = net.countries[e.to];
     if(!from || !to) return;
     const color = ORG_NETWORK_EDGE_COLORS[e.kind] || '#999';
-    const line = L.polyline([[from.lat,from.lon],[to.lat,to.lon]], {
+    const latlngs = [[from.lat,from.lon],[to.lat,to.lon]];
+    const popupHtml = `<b>${e.from} → ${e.to}</b>(${e.kind==='conflict' ? '依存・競合・対立' : '協力・供給'})<br>${e.label}<br><span style="color:var(--ink-dim);font-size:.85em;">${e.detail}</span>`;
+    // 見た目の線(weight:3)はスマホ・タブレットではタップしにくいため、見えない
+    // 太い当たり判定線(weight:16・opacity:0)を同じ座標に重ねてタップ精度を上げる。
+    const hitArea = L.polyline(latlngs, {color:'#000', weight:16, opacity:0}).addTo(window.worldMap);
+    hitArea.bindPopup(popupHtml);
+    window.orgNetworkLayers.push(hitArea);
+    const line = L.polyline(latlngs, {
       color, weight:3, opacity:0.85, dashArray: e.kind==='conflict' ? '6,5' : null
     }).addTo(window.worldMap);
-    line.bindPopup(`<b>${e.from} → ${e.to}</b>(${e.kind==='conflict' ? '依存・競合・対立' : '協力・供給'})<br>${e.label}<br><span style="color:var(--ink-dim);font-size:.85em;">${e.detail}</span>`);
+    line.bindPopup(popupHtml);
     window.orgNetworkLayers.push(line);
   });
   // 通常の国選択(flyTo)と同じ滑らかなカメラ移動にすることで、「普通の地図」と
