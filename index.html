@@ -1063,7 +1063,7 @@ async function renderLocalNews(){
       box.innerHTML = `<div class="weather-loading">「${escapeHtml(label)}」関連のニュースが見つかりませんでした。</div>`;
       return;
     }
-    box.innerHTML = `<div class="news-feed-label">「${escapeHtml(label)}」関連(Google News・自動翻訳なし)</div>` +
+    box.innerHTML = `<div class="news-feed-label">「${escapeHtml(label)}」関連(ニュース検索・自動翻訳なし)</div>` +
       data.items.slice(0,6).map(item => `
         <a class="news-feed-item" href="${escapeHtml(item.link)}" target="_blank" rel="noopener">
           <span class="news-feed-title">${escapeHtml(item.title)}</span>
