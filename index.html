@@ -127,6 +127,7 @@
   #mapFullscreenBtn:hover{background:var(--navy-800);}
   .leaflet-control-layers{background:var(--navy-900) !important;color:var(--ink) !important;border:1px solid var(--brass) !important;font-size:.75rem;}
   .leaflet-control-layers-toggle{filter:invert(1);}
+  .eu-net-label{font-weight:700;font-size:.72rem;}
   #tab-earth{height:100%;}
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--navy-700);border-radius:4px;}
@@ -215,6 +216,7 @@
             <span class="cr-status" id="customRouteStatus"></span>
           </div>
         </details>
+        <div id="euNetworkTabs" class="tabs" style="display:none;flex:0 0 auto;"></div>
         <div id="mapFullscreenWrap">
           <div id="worldMap"></div>
           <button id="mapFullscreenBtn" type="button" title="全画面表示">⛶</button>
@@ -487,6 +489,56 @@ COUNTRY_DB.forEach(c=>{
     statsUrl: c[8] || null, // EU(Eurostat)・ASEAN(ASEANstats)のような、域内公式統計ポータルを持つ組織用(任意9番目の要素)
   };
 });
+
+/* ===== 交渉モード:相手国が「EU」の時だけ出す、加盟国間の関係性ネットワーク図 =====
+   対象はGDP上位9か国。関係性データは授業用の概要レベル(代表的・典型的な関係を分かり
+   やすく要約したもの)であり、精密な統計値そのものではない。危機管理モードには一切
+   関与しない(render()内でcurrentMode==='nego'の時だけ呼び出す)。 */
+const EU_NETWORK_COUNTRIES = {
+  "ドイツ":     {lat:52.52,   lon:13.405, info:"EU最大の経済大国・人口大国。自動車・機械工業の中心で「欧州の工場」とも呼ばれる。輸出依存度が高く、部品・資源・労働力の多くを近隣国からの供給に頼る。"},
+  "フランス":   {lat:48.8566, lon:2.3522, info:"EU第2位の経済大国。原子力発電による電力輸出国で、EU共通農業政策(CAP)の最大の受益国の一つ。航空・防衛産業でドイツと協力関係にある。"},
+  "イタリア":   {lat:41.9028, lon:12.4964,info:"製造業・ファッション・食品産業が強み。北部の工業地帯と南部の農業地帯で国内の経済格差が大きい。"},
+  "スペイン":   {lat:40.4168, lon:-3.7038,info:"地中海式農業による果物・野菜の輸出大国。太陽光・風力など再生可能エネルギーの導入も進む。南欧の若年層は雇用を求め北欧・西欧へ移動する傾向がある。"},
+  "オランダ":   {lat:52.3676, lon:4.9041, info:"国土は小さいが施設園芸技術により世界第2位の農産物輸出国。ロッテルダム港を中心に欧州の物流拠点としての役割も大きい。"},
+  "ポーランド": {lat:52.2297, lon:21.0122,info:"2004年のEU拡大以降、安価な労働力と製造拠点として西欧(特にドイツ)の自動車・家電産業のサプライチェーンに深く組み込まれている。石炭火力への依存度が高く、脱炭素政策を巡りEUと摩擦がある。"},
+  "ベルギー":   {lat:50.8503, lon:4.3517, info:"EU本部が置かれる「EUの首都」。アントウェルペン港を中心に化学工業・物流が発達し、周辺国への中継拠点としての役割を持つ。"},
+  "スウェーデン":{lat:59.3293,lon:18.0686,info:"水力・風力など再生可能エネルギー比率が高い環境先進国。ICT産業も発達し、デジタル分野でEUをリードする。"},
+  "アイルランド":{lat:53.3498,lon:-6.2603,info:"法人税率の低さからGoogleやAppleなど米国巨大IT企業の欧州拠点が集中するデジタル経済の中心地。一方で法人税を巡り他のEU加盟国と摩擦もある。"},
+};
+const EU_NETWORK_CATEGORIES = [
+  {key:'all',      label:'全体'},
+  {key:'agri',     label:'🌾 農業・食品'},
+  {key:'industry', label:'🚗 工業'},
+  {key:'energy',   label:'🌱 環境・エネルギー'},
+  {key:'digital',  label:'💻 デジタル・人の移動'},
+];
+// kind: 'cooperation'(協力・供給)または 'conflict'(依存・競合・対立)。色分けして表示する。
+const EU_NETWORK_EDGES = [
+  {category:'agri', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'花き・乳製品・園芸作物を供給', detail:'オランダは国土が小さいながら施設園芸技術により世界第2位の農産物輸出国。地理的に近いドイツへ大量に出荷している。'},
+  {category:'agri', from:'オランダ', to:'フランス', kind:'cooperation', label:'農産物の輸出', detail:'オランダは園芸作物や乳製品をフランスへも供給しており、EU域内の農産物物流網の要となっている。'},
+  {category:'agri', from:'ポーランド', to:'ドイツ', kind:'cooperation', label:'食肉・果物・農業労働力を供給', detail:'EU拡大以降、ポーランドは安価な農産物と季節労働力をドイツへ供給する重要な供給国になっている。'},
+  {category:'agri', from:'スペイン', to:'ドイツ', kind:'cooperation', label:'果物・野菜(地中海式農業)を供給', detail:'地中海性気候を活かした果樹・野菜栽培が盛んで、年間を通じて北欧・中欧へ出荷している。'},
+  {category:'agri', from:'フランス', to:'イタリア', kind:'conflict', label:'EU共通農業政策(CAP)予算を巡る競合', detail:'ともにEU最大級の農業国であり、EU予算(CAP)の配分や農産物輸出でしばしば利害が対立する。'},
+
+  {category:'industry', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'自動車部品・製造拠点としての依存', detail:'ドイツの自動車・機械メーカーは人件費の安いポーランドの工場に部品生産や組立を委託しており、サプライチェーン上の依存関係が強い。'},
+  {category:'industry', from:'ドイツ', to:'フランス', kind:'cooperation', label:'航空機産業(エアバス)での協力', detail:'ドイツ・フランスは共同でエアバス社を運営するなど、航空・防衛産業で協力関係にある。'},
+  {category:'industry', from:'フランス', to:'スペイン', kind:'cooperation', label:'自動車産業の工場展開', detail:'フランスの自動車メーカーがスペインに多くの生産拠点を持ち、両国の製造業は密接に結びついている。'},
+  {category:'industry', from:'ベルギー', to:'ドイツ', kind:'cooperation', label:'アントウェルペン港を通じた物流供給', detail:'ベルギーのアントウェルペン港は欧州有数のコンテナ港で、ドイツ工業地帯への原材料・製品の中継拠点となっている。'},
+  {category:'industry', from:'イタリア', to:'ドイツ', kind:'conflict', label:'機械・工業製品の輸出で競合', detail:'イタリア北部とドイツはともに高度な機械工業を持ち、世界市場で輸出を競い合う関係にある。'},
+
+  {category:'energy', from:'フランス', to:'ドイツ', kind:'cooperation', label:'原子力発電による電力供給', detail:'フランスは原子力発電の比率が高く、電力網を通じてドイツなど近隣国へ電力を輸出している。'},
+  {category:'energy', from:'ドイツ', to:'ポーランド', kind:'conflict', label:'脱炭素政策を巡る対立', detail:'ドイツが石炭火力からの脱却を急ぐ一方、ポーランドは電力の多くを石炭に依存しており、EUの気候変動対策を巡って立場の違いが目立つ。'},
+  {category:'energy', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'北海の洋上風力・水素事業での協力', detail:'両国は北海における洋上風力発電や水素エネルギーの共同開発を進めている。'},
+  {category:'energy', from:'スウェーデン', to:'ドイツ', kind:'cooperation', label:'再生可能エネルギー技術の供給', detail:'水力・風力発電の先進国であるスウェーデンは、グリーン技術の分野でEU内をリードしている。'},
+  {category:'energy', from:'スペイン', to:'フランス', kind:'cooperation', label:'太陽光発電による電力供給の拡大', detail:'スペインは太陽光発電の導入が進み、送電網を通じてフランスなど近隣国への電力供給の拡大が期待されている。'},
+
+  {category:'digital', from:'アイルランド', to:'ドイツ', kind:'cooperation', label:'米国IT企業の欧州拠点としての存在感', detail:'アイルランドは法人税率の低さからGoogleやApple等の欧州本社が集中し、EU全体のデジタル経済を支えている。'},
+  {category:'digital', from:'アイルランド', to:'フランス', kind:'conflict', label:'法人税率を巡る摩擦', detail:'アイルランドの低い法人税率は他のEU加盟国(特にフランス)から「租税競争」として批判されることがある。'},
+  {category:'digital', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'労働力・人材の西欧への移動', detail:'ポーランドから多くの労働者がより高い賃金を求めてドイツなど西欧諸国へ移住しており、送り出し側は人材流出という課題を抱える。'},
+  {category:'digital', from:'スペイン', to:'ドイツ', kind:'conflict', label:'若年層の雇用を求めた移動', detail:'南欧は若年失業率が高く、スペインの若者が雇用機会を求めてドイツなど北欧・西欧へ移住する傾向がある。'},
+  {category:'digital', from:'ドイツ', to:'フランス', kind:'cooperation', label:'EUデジタル規制のルール作りで協力', detail:'GDPR(一般データ保護規則)やデジタル市場法など、EUのデジタル分野のルール形成でドイツ・フランスが主導的役割を果たしている。'},
+];
+const EU_NETWORK_EDGE_COLORS = { cooperation:'#5fae6b', conflict:'#c9603a' };
 
 /* ===== 危機管理モード:10ルートの出発地・脱出地(直線補間で6関門を概算配置) ===== */
 const CRISIS_ROUTES = {
@@ -924,17 +976,82 @@ function renderOrgNote(homeName, home, partnerName, partner){
     note.style.display = 'none';
   }
 }
+/* ===== EUネットワーク図の描画(交渉モード限定・危機管理モードには一切触れない) ===== */
+window.euNetworkLayers = [];
+let euNetworkActiveCategory = 'all';
+function clearEUNetwork(){
+  window.euNetworkLayers.forEach(l=>l.remove());
+  window.euNetworkLayers = [];
+}
+function buildEUNetworkTabsOnce(){
+  const bar = document.getElementById('euNetworkTabs');
+  if(bar.childElementCount) return; // 一度だけ組み立てる
+  EU_NETWORK_CATEGORIES.forEach((cat,i)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tab-btn' + (cat.key === euNetworkActiveCategory ? ' active' : '');
+    btn.textContent = cat.label;
+    btn.addEventListener('click', ()=>{
+      bar.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      euNetworkActiveCategory = cat.key;
+      drawEUNetwork(cat.key);
+    });
+    bar.appendChild(btn);
+  });
+}
+function drawEUNetwork(categoryKey){
+  clearEUNetwork();
+  Object.entries(EU_NETWORK_COUNTRIES).forEach(([name,c])=>{
+    const marker = L.circleMarker([c.lat,c.lon], {radius:8, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
+    marker.bindTooltip(name, {permanent:true, direction:'top', offset:[0,-6], className:'eu-net-label'});
+    marker.bindPopup(`<b>${name}</b><br>${c.info}`);
+    window.euNetworkLayers.push(marker);
+  });
+  const edges = EU_NETWORK_EDGES.filter(e => categoryKey === 'all' || e.category === categoryKey);
+  edges.forEach(e=>{
+    const from = EU_NETWORK_COUNTRIES[e.from], to = EU_NETWORK_COUNTRIES[e.to];
+    if(!from || !to) return;
+    const color = EU_NETWORK_EDGE_COLORS[e.kind] || '#999';
+    const line = L.polyline([[from.lat,from.lon],[to.lat,to.lon]], {
+      color, weight:3, opacity:0.85, dashArray: e.kind==='conflict' ? '6,5' : null
+    }).addTo(window.worldMap);
+    line.bindPopup(`<b>${e.from} → ${e.to}</b>(${e.kind==='conflict' ? '依存・競合・対立' : '協力・供給'})<br>${e.label}<br><span style="color:var(--ink-dim);font-size:.85em;">${e.detail}</span>`);
+    window.euNetworkLayers.push(line);
+  });
+  const bounds = L.latLngBounds(Object.values(EU_NETWORK_COUNTRIES).map(c=>[c.lat,c.lon]));
+  window.worldMap.fitBounds(bounds, {padding:[40,40]});
+}
+function showEUNetwork(){
+  buildEUNetworkTabsOnce();
+  document.getElementById('euNetworkTabs').style.display = 'flex';
+  if(window.mapMarker){ window.mapMarker.remove(); window.mapMarker = null; }
+  drawEUNetwork(euNetworkActiveCategory);
+}
+function hideEUNetwork(){
+  document.getElementById('euNetworkTabs').style.display = 'none';
+  clearEUNetwork();
+}
+
 function render(){
   const homeName = homeInput.value.trim();
   const partnerName = partnerInput.value.trim();
   const home = COUNTRY_MAP[homeName];
   const partner = COUNTRY_MAP[partnerName];
 
-  if(partner){
+  // 相手国が「EU」の時だけ、通常の1地点表示の代わりに加盟国間の関係ネットワーク図を出す。
+  // 危機管理モードではこの分岐自体に入らない(render()はnegoモードでしか呼ばれない)。
+  if(currentMode === 'nego' && partnerName === 'EU'){
     statusEl.textContent = '';
-    flyTo(partner.center, partner.zoom, partnerName);
-  } else if(partnerName){
-    geocodeFallback(partnerName);
+    showEUNetwork();
+  } else {
+    hideEUNetwork();
+    if(partner){
+      statusEl.textContent = '';
+      flyTo(partner.center, partner.zoom, partnerName);
+    } else if(partnerName){
+      geocodeFallback(partnerName);
+    }
   }
 
   renderOrgNote(homeName, home, partnerName, partner);
@@ -1190,6 +1307,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.getElementById('customRoutePanel').style.display = (isCrisis && crisisRouteSelect.value === 'custom') ? '' : 'none';
     if(isCrisis){
       document.getElementById('geoNote').style.display = 'none';
+      hideEUNetwork();
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
