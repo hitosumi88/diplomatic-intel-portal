@@ -617,6 +617,148 @@ const ORG_NETWORKS = {
       {category:'digital', from:'パラグアイ', to:'アルゼンチン', kind:'conflict', label:'労働力の越境移動', detail:'パラグアイから多くの人々が、より高い賃金を求めてアルゼンチンへ出稼ぎに出ている。'},
     ],
   },
+  // OPEC: 加盟12か国すべて
+  OPEC: {
+    countries: {
+      "アルジェリア":   {lat:36.7538, lon:3.0588,  info:"北アフリカ最大級の天然ガス産出国。地中海パイプラインを通じてヨーロッパへ天然ガスを輸出する重要な供給国。"},
+      "コンゴ共和国":   {lat:-4.2634, lon:15.2429, info:"ギニア湾岸の産油国。海上油田からの原油輸出が経済の中心を占める。"},
+      "赤道ギニア":     {lat:3.75,    lon:8.7833,  info:"人口は少ないが、LNG(液化天然ガス)輸出拠点として存在感を持つ小規模産油国。"},
+      "ガボン":         {lat:0.4162,  lon:9.4673,  info:"ギニア湾岸の産油国。石油収入への依存度が高く、資源国特有の経済構造を持つ。"},
+      "イラン":         {lat:35.6892, lon:51.389,  info:"世界有数の原油・天然ガス資源国。欧米の経済制裁下で輸出が制限されており、中国など一部市場への輸出に依存する。"},
+      "イラク":         {lat:33.3152, lon:44.3661, info:"世界有数の原油生産国。戦争復興からの経済再建が進み、石油収入が国家財政の大半を占める。"},
+      "クウェート":     {lat:29.3759, lon:47.9774, info:"一人当たりの原油埋蔵量が世界最大級の産油小国。サウジアラビアとの中立地帯で油田を共同開発している。"},
+      "リビア":         {lat:32.8872, lon:13.1913, info:"高品質の軽質原油を産出するが、内戦による政治不安定から生産量が大きく変動する。"},
+      "ナイジェリア":   {lat:9.0765,  lon:7.3986,  info:"アフリカ最大の産油国でOPEC最大級の人口を持つが、石油収入への依存とインフラ整備の遅れが課題。"},
+      "サウジアラビア": {lat:24.7136, lon:46.6753, info:"OPEC最大の産油国で「スイングプロデューサー」として加盟国全体の生産量調整の主導役を担う。"},
+      "UAE":            {lat:24.4539, lon:54.3773, info:"ドバイ・アブダビを中心に石油収入を金融・観光・物流への経済多角化に活用している。"},
+      "ベネズエラ":     {lat:10.4806, lon:-66.9036,info:"世界最大級の原油埋蔵量を持つが、経済危機とアメリカの経済制裁により生産・輸出が大きく落ち込んでいる。"},
+    },
+    edges: [
+      {category:'energy', from:'サウジアラビア', to:'イラン', kind:'conflict', label:'地域覇権・原油生産方針を巡る対立', detail:'スンニ派とシーア派の盟主としての対立に加え、原油の生産方針でも立場の違いが目立つ。'},
+      {category:'energy', from:'サウジアラビア', to:'UAE', kind:'conflict', label:'増産ペースを巡る方針対立(2021年)', detail:'OPEC+の生産量基準の見直しを巡り両国の方針が対立し、会議が決裂する事態も起きた。'},
+      {category:'energy', from:'イラク', to:'クウェート', kind:'conflict', label:'1990年の侵攻を巡る歴史的対立', detail:'イラクによるクウェート侵攻(湾岸戦争のきっかけ)は両国関係に今も影響を残す歴史的対立である。'},
+      {category:'energy', from:'イラン', to:'イラク', kind:'conflict', label:'イラン・イラク戦争(1980-88)の歴史的対立', detail:'8年間に及ぶ戦争は両国の油田・インフラに深い禍根を残した。'},
+      {category:'energy', from:'サウジアラビア', to:'イラク', kind:'cooperation', label:'OPEC内の生産量調整での協力', detail:'OPEC総会での減産・増産合意を通じて、生産量の調整に協力している。'},
+      {category:'energy', from:'ナイジェリア', to:'サウジアラビア', kind:'conflict', label:'アジア市場向け原油輸出シェアの競合', detail:'両国とも軽質原油をアジア市場へ輸出しており、顧客獲得を競い合っている。'},
+      {category:'energy', from:'ベネズエラ', to:'サウジアラビア', kind:'conflict', label:'制裁下での輸出市場シェア競合', detail:'アメリカの経済制裁で輸出が落ち込んだベネズエラに代わり、サウジアラビアなどが市場シェアを拡大している。'},
+      {category:'energy', from:'リビア', to:'アルジェリア', kind:'cooperation', label:'地中海パイプラインを通じた対欧州供給', detail:'地理的に近い両国は地中海を挟んでヨーロッパへ天然ガスを供給する役割を担っている。'},
+      {category:'energy', from:'ガボン', to:'コンゴ共和国', kind:'cooperation', label:'ギニア湾の海底油田開発での協力', detail:'ギニア湾岸で隣接する両国は、海底油田の開発・権益を巡って協力関係にある。'},
+      {category:'energy', from:'赤道ギニア', to:'ガボン', kind:'cooperation', label:'LNG輸出拠点としての近隣協力', detail:'ともにギニア湾岸の小規模産油国で、LNG(液化天然ガス)輸出施設の運営で協力している。'},
+      {category:'energy', from:'クウェート', to:'サウジアラビア', kind:'cooperation', label:'中立地帯油田の共同開発', detail:'両国の国境地帯にある「中立地帯」の油田は、両国が利益を分け合う形で共同開発されている。'},
+      {category:'energy', from:'UAE', to:'イラン', kind:'conflict', label:'ホルムズ海峡・島の領有権を巡る緊張', detail:'UAEが領有権を主張するアブムサ島などをイランが実効支配しており、ホルムズ海峡の安全保障上も緊張が続く。'},
+      {category:'industry', from:'サウジアラビア', to:'UAE', kind:'cooperation', label:'石油化学・精製プラントへの投資協力', detail:'両国は原油の付加価値を高めるため、石油化学・精製分野への投資を競いつつも技術協力も行っている。'},
+      {category:'industry', from:'ナイジェリア', to:'アルジェリア', kind:'conflict', label:'アフリカ最大の産油国の地位を競合', detail:'両国はともにアフリカを代表する産油国で、地域内での経済的地位や外国投資誘致を競い合っている。'},
+      {category:'industry', from:'イラン', to:'イラク', kind:'cooperation', label:'戦後復興における石油インフラ投資協力', detail:'近年は関係改善が進み、イランがイラクの石油インフラ復興に投資する動きが見られる。'},
+      {category:'industry', from:'リビア', to:'ナイジェリア', kind:'conflict', label:'生産目標の免除を巡るOPEC内の摩擦', detail:'両国はOPECの減産合意から度々免除される立場にあり、生産量の順守を求める他の加盟国との間で摩擦が生じやすい。'},
+      {category:'digital', from:'UAE', to:'サウジアラビア', kind:'cooperation', label:'金融・物流ハブとしての結びつき', detail:'ドバイ・アブダビは中東地域の金融・物流の中継拠点として、サウジアラビアなど周辺国の資本も集めている。'},
+      {category:'digital', from:'ナイジェリア', to:'UAE', kind:'conflict', label:'資本・人材のドバイへの流出', detail:'ナイジェリアの富裕層や資本がドバイの不動産・金融市場へ流出する傾向が指摘されている。'},
+      {category:'digital', from:'アルジェリア', to:'リビア', kind:'conflict', label:'労働力の越境移動と内戦による不安定化', detail:'かつてはアルジェリア人労働者がリビアの石油産業に多く流入していたが、内戦により往来が不安定になっている。'},
+      {category:'agri', from:'ナイジェリア', to:'ガボン', kind:'cooperation', label:'ココア・キャッサバなど農産物の限定的な域内貿易', detail:'産油国同士で農業の規模は小さいが、西アフリカ・中部アフリカの隣国間で農産物の貿易が一部行われている。'},
+    ],
+  },
+  // OAPEC: 加盟11か国すべて
+  OAPEC: {
+    countries: {
+      "アルジェリア":   {lat:36.7538, lon:3.0588,  info:"北アフリカ最大級の天然ガス産出国。地中海パイプラインを通じてヨーロッパへ天然ガスを輸出する重要な供給国。"},
+      "バーレーン":     {lat:26.2285, lon:50.586,  info:"小さな島国でOAPEC最古の産油国の一つだが、近年は石油資源が枯渇しつつあり金融業への経済多角化を進めている。"},
+      "エジプト":       {lat:30.0444, lon:31.2357, info:"スエズ運河を通じた石油輸送の要衝。自国の原油生産は少ないが、地域の物流・エネルギー中継拠点としての役割が大きい。"},
+      "イラク":         {lat:33.3152, lon:44.3661, info:"世界有数の原油生産国。戦争復興からの経済再建が進み、石油収入が国家財政の大半を占める。"},
+      "クウェート":     {lat:29.3759, lon:47.9774, info:"一人当たりの原油埋蔵量が世界最大級の産油小国。サウジアラビアとの中立地帯で油田を共同開発している。"},
+      "リビア":         {lat:32.8872, lon:13.1913, info:"高品質の軽質原油を産出するが、内戦による政治不安定から生産量が大きく変動する。"},
+      "カタール":       {lat:25.2854, lon:51.531,  info:"世界最大級のLNG(液化天然ガス)輸出国。原油よりも天然ガス収入への依存度が高い。"},
+      "サウジアラビア": {lat:24.7136, lon:46.6753, info:"OAPEC最大の産油国で、地域の石油政策に大きな影響力を持つ。"},
+      "シリア":         {lat:33.5138, lon:36.2765, info:"かつて産油国だったが、内戦により石油インフラが破壊され生産量が激減した。"},
+      "チュニジア":     {lat:36.8065, lon:10.1815, info:"北アフリカの小規模産油・産ガス国。地中海を挟んだヨーロッパへの天然ガスパイプラインの中継国としての役割も持つ。"},
+      "UAE":            {lat:24.4539, lon:54.3773, info:"ドバイ・アブダビを中心に石油収入を金融・観光・物流への経済多角化に活用している。"},
+    },
+    edges: [
+      {category:'energy', from:'サウジアラビア', to:'カタール', kind:'conflict', label:'外交路線・LNG輸出を巡る摩擦', detail:'2017年にはサウジアラビア主導でカタールとの国交が断絶するなど、政治・経済両面で摩擦が生じた。'},
+      {category:'energy', from:'カタール', to:'UAE', kind:'conflict', label:'2017年断交事件による経済的対立', detail:'サウジアラビア・UAEなどによるカタール断交は、通商・金融面での関係を大きく悪化させた。'},
+      {category:'energy', from:'エジプト', to:'サウジアラビア', kind:'cooperation', label:'スエズ運河を通じた原油輸送の中継協力', detail:'エジプトが管理するスエズ運河は中東産油国からヨーロッパへ原油を運ぶ重要な中継路となっている。'},
+      {category:'energy', from:'シリア', to:'イラク', kind:'conflict', label:'内戦による石油インフラの破壊と密輸の混乱', detail:'シリア内戦は両国国境地帯の石油インフラを破壊し、石油の密輸や武装勢力による資金源化を招いた。'},
+      {category:'energy', from:'アルジェリア', to:'チュニジア', kind:'cooperation', label:'地中海横断天然ガスパイプラインでの中継協力', detail:'アルジェリア産天然ガスはチュニジアを経由するパイプラインでヨーロッパへ送られている。'},
+      {category:'energy', from:'リビア', to:'チュニジア', kind:'cooperation', label:'石油製品の供給と労働力移動の双方での結びつき', detail:'国境を接する両国は石油製品の供給に加え、労働力や難民の往来でも深く結びついている。'},
+      {category:'energy', from:'イラク', to:'クウェート', kind:'conflict', label:'1990年の侵攻を巡る歴史的対立', detail:'イラクによるクウェート侵攻(湾岸戦争のきっかけ)は両国関係に今も影響を残す歴史的対立である。'},
+      {category:'energy', from:'サウジアラビア', to:'バーレーン', kind:'cooperation', label:'橋で接続され石油精製施設を共同運営', detail:'両国は「キング・ファハド・コーズウェイ」で陸路接続され、石油精製施設の共同運営など経済的に一体化している。'},
+      {category:'energy', from:'クウェート', to:'サウジアラビア', kind:'cooperation', label:'中立地帯油田の共同開発', detail:'両国の国境地帯にある「中立地帯」の油田は、両国が利益を分け合う形で共同開発されている。'},
+      {category:'industry', from:'UAE', to:'サウジアラビア', kind:'cooperation', label:'石油化学・精製プラントへの投資協力', detail:'両国は原油の付加価値を高めるため、石油化学・精製分野への投資を競いつつも技術協力も行っている。'},
+      {category:'industry', from:'エジプト', to:'リビア', kind:'conflict', label:'リビア内戦への介入を巡る政治的対立', detail:'エジプトはリビア東部勢力を支援するなど内戦に介入し、周辺国との間で政治的な緊張を生んでいる。'},
+      {category:'industry', from:'チュニジア', to:'アルジェリア', kind:'cooperation', label:'繊維・軽工業の原材料供給での結びつき', detail:'両国の軽工業は地理的近接性を活かし、原材料や中間財の供給網でつながっている。'},
+      {category:'industry', from:'カタール', to:'サウジアラビア', kind:'conflict', label:'LNG・石油化学の投資・輸出シェアを巡る競合', detail:'両国はともに天然ガス関連産業への投資を拡大しており、輸出市場でのシェアを競い合っている。'},
+      {category:'digital', from:'エジプト', to:'サウジアラビア', kind:'cooperation', label:'出稼ぎ労働者(建設業・インフラ分野)の送出', detail:'人口の多いエジプトは、建設業やインフラ分野の労働力をサウジアラビアなど湾岸諸国へ送り出す重要な送出国となっている。'},
+      {category:'digital', from:'エジプト', to:'UAE', kind:'cooperation', label:'出稼ぎ労働者(建設業・インフラ分野)の送出', detail:'エジプトからの労働者はUAEの建設・インフラ分野でも重要な働き手となっている。'},
+      {category:'digital', from:'シリア', to:'エジプト', kind:'conflict', label:'内戦による難民の流出', detail:'シリア内戦により多くの難民が周辺国へ流出し、エジプトもその受け入れ先の一つとなっている。'},
+      {category:'digital', from:'チュニジア', to:'リビア', kind:'conflict', label:'政情不安による労働者・難民の流出入', detail:'国境を接するリビアの政情不安は、チュニジア側への難民・労働者の流出入に直接影響を及ぼしている。'},
+      {category:'digital', from:'アルジェリア', to:'リビア', kind:'conflict', label:'労働力の越境移動と内戦による不安定化', detail:'かつてはアルジェリア人労働者がリビアの石油産業に多く流入していたが、内戦により往来が不安定になっている。'},
+      {category:'agri', from:'エジプト', to:'チュニジア', kind:'cooperation', label:'地中海農産物(オリーブ油・柑橘類)の貿易', detail:'地中海沿岸国同士として、オリーブ油や柑橘類などの農産物貿易が行われている。'},
+      {category:'agri', from:'チュニジア', to:'リビア', kind:'cooperation', label:'オリーブ油・農産物の輸出', detail:'チュニジアは世界的なオリーブ油輸出国で、隣国リビアへも農産物を供給している。'},
+    ],
+  },
+  // APEC: 加盟21エコノミーのうち、高校地理で扱う主要9か国に絞って表示
+  APEC: {
+    countries: {
+      "アメリカ":   {lat:38.9072, lon:-77.0369, info:"世界最大の経済大国。APEC加盟国の多くと自由貿易協定を持ち、アジア太平洋地域における最大の消費市場。"},
+      "日本":       {lat:35.6762, lon:139.6503, info:"APEC域内の製造技術・資本輸出国。自動車・電子機器などの高度な工業製品をアジア太平洋各国へ供給する。"},
+      "中国":       {lat:39.9042, lon:116.4074, info:"世界最大の輸出国でAPEC最大の人口・経済規模を持つ。多くの加盟国にとって最大の貿易相手国。"},
+      "ロシア":     {lat:55.7558, lon:37.6173,  info:"天然ガス・原油などの資源輸出国。ウクライナ侵攻後は欧米との関係が悪化し、アジア太平洋(特に中国)への資源供給を強めている。"},
+      "韓国":       {lat:37.5665, lon:126.978,  info:"半導体・電子機器・自動車の輸出大国。製造業のサプライチェーンでAPEC域内と深く結びついている。"},
+      "カナダ":     {lat:45.4215, lon:-75.6972, info:"豊富な資源(原油・天然ガス・鉱物・木材)の輸出国。アメリカへのエネルギー輸出に加え、アジア太平洋地域への資源輸出も拡大している。"},
+      "メキシコ":   {lat:19.4326, lon:-99.1332, info:"安価な労働力を背景とした製造業拠点。USMCAを通じてアメリカ・カナダと一体化したサプライチェーンを持つ。"},
+      "オーストラリア":{lat:-35.2809,lon:149.13, info:"鉄鉱石・石炭などの資源輸出大国。中国を筆頭にアジアへの資源供給国としての役割が大きい。"},
+      "インドネシア":{lat:-6.2088, lon:106.8456,info:"APEC域内で人口最大の国の一つ。ニッケルなど鉱物資源が豊富で、近年は電気自動車用電池産業の誘致に力を入れる。"},
+    },
+    edges: [
+      {category:'energy', from:'ロシア', to:'中国', kind:'cooperation', label:'天然ガス・原油の対中輸出拡大', detail:'ウクライナ侵攻後の欧米による制裁を受け、ロシアは天然ガス・原油の輸出先を中国など対中依存へ急速に切り替えている。'},
+      {category:'energy', from:'オーストラリア', to:'中国', kind:'conflict', label:'鉄鉱石・石炭輸出を巡る政治的摩擦', detail:'中国にとって最大の鉄鉱石・石炭供給国だが、政治的関係の悪化により一時的な輸入制限などの貿易摩擦も発生した。'},
+      {category:'energy', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'原油・天然ガスパイプラインによる供給', detail:'カナダは豊富な原油・天然ガス資源をパイプラインでアメリカへ輸出しており、北米のエネルギー需給を支えている。'},
+      {category:'energy', from:'ロシア', to:'日本', kind:'conflict', label:'北方領土問題と資源開発の両立', detail:'北方領土を巡る領土問題を抱えつつ、サハリンの石油・天然ガス開発では経済的な結びつきも残る。'},
+      {category:'industry', from:'中国', to:'アメリカ', kind:'conflict', label:'貿易摩擦・関税措置を巡る対立', detail:'米中間では高関税の相互発動など、貿易戦争と呼ばれる激しい対立が続いている。'},
+      {category:'industry', from:'日本', to:'アメリカ', kind:'cooperation', label:'自動車・半導体製造分野での投資協力', detail:'日本の自動車・半導体企業はアメリカ国内に工場を建設するなど、両国の製造業は投資を通じて結びついている。'},
+      {category:'industry', from:'韓国', to:'中国', kind:'cooperation', label:'半導体・電子部品のサプライチェーンでの結びつき', detail:'韓国の半導体・電子部品産業は中国の組立工場向けに部品を供給するなど、サプライチェーン上で密接に結びついている。'},
+      {category:'industry', from:'メキシコ', to:'アメリカ', kind:'cooperation', label:'自動車組立工場(マキラドーラ)としての結びつき', detail:'アメリカ系自動車メーカーはメキシコ国境地帯に多くの組立工場を置き、安価な労働力に依存したサプライチェーンを築いている。'},
+      {category:'industry', from:'日本', to:'中国', kind:'conflict', label:'製造業サプライチェーンでの競合と協力の併存', detail:'部品供給では協力関係にある一方、完成品市場では家電・自動車などで競合する複雑な関係にある。'},
+      {category:'industry', from:'中国', to:'韓国', kind:'conflict', label:'半導体・電子機器市場での競合', detail:'中国は自国半導体産業の育成を進めており、韓国企業が強みを持つ市場での競合が強まっている。'},
+      {category:'agri', from:'オーストラリア', to:'中国', kind:'cooperation', label:'牛肉・小麦などの農産物輸出', detail:'オーストラリアは牛肉・小麦・大麦など、中国へ大量の農産物を輸出している。'},
+      {category:'agri', from:'アメリカ', to:'日本', kind:'cooperation', label:'牛肉・大豆・トウモロコシの輸出', detail:'アメリカは日本にとって最大級の農産物輸入先で、牛肉・大豆・トウモロコシなどを安定的に供給している。'},
+      {category:'agri', from:'カナダ', to:'中国', kind:'cooperation', label:'小麦・キャノーラなど穀物の輸出', detail:'カナダは広大な農地を活かした穀物輸出国で、中国へも小麦やキャノーラ(菜種)を供給している。'},
+      {category:'agri', from:'インドネシア', to:'中国', kind:'conflict', label:'パーム油・ニッケルの輸出価格を巡る競合', detail:'インドネシアは資源輸出国として中国市場での価格・シェアを意識した輸出戦略を取っている。'},
+      {category:'digital', from:'韓国', to:'日本', kind:'conflict', label:'半導体材料の輸出管理を巡る摩擦(2019年)', detail:'日本政府による半導体材料の輸出管理強化は、韓国の半導体産業に大きな影響を与え外交問題化した。'},
+      {category:'digital', from:'中国', to:'アメリカ', kind:'conflict', label:'ハイテク・半導体分野での技術覇権競争', detail:'先端半導体の輸出規制など、米中間では次世代技術の優位性を巡る競争が激化している。'},
+      {category:'digital', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'労働力の越境移動', detail:'メキシコから多くの労働者が、より高い賃金を求めてアメリカへ移住している。'},
+      {category:'digital', from:'インドネシア', to:'日本', kind:'cooperation', label:'技能実習生・労働者の送出', detail:'インドネシアは日本の技能実習制度などを通じて、介護・製造業分野の労働者を送り出している。'},
+    ],
+  },
+  // AU: 加盟55か国のうち、高校地理で扱う主要8か国に絞って表示
+  AU: {
+    countries: {
+      "ナイジェリア": {lat:9.0765,  lon:7.3986,  info:"アフリカ最大の人口・経済規模(GDP)を持つ産油国。石油収入に依存する一方、製造業の多角化が課題。"},
+      "エジプト":     {lat:30.0444, lon:31.2357, info:"北アフリカの地域大国でスエズ運河を管理する。人口・市場規模が大きく、アラブ世界とアフリカを結ぶ要衝。"},
+      "南アフリカ":   {lat:-25.7479,lon:28.2293, info:"アフリカで最も工業化が進んだ国。鉱業(金・白金)と自動車産業が経済の柱で、BRICSの一員でもある。"},
+      "エチオピア":   {lat:9.03,    lon:38.74,   info:"アフリカ連合(AU)本部が置かれる「アフリカの首都」。人口世界第2位の規模を持ち、近年は製造業誘致に力を入れる。"},
+      "ケニア":       {lat:-1.2921, lon:36.8219, info:"東アフリカの経済・物流の中心で、ICT・モバイル決済産業(M-Pesa)が発達。茶・コーヒーの輸出国。"},
+      "アルジェリア": {lat:36.7538, lon:3.0588,  info:"北アフリカ最大級の天然ガス産出国。地中海パイプラインを通じてヨーロッパへ天然ガスを輸出する重要な供給国。"},
+      "モロッコ":     {lat:34.0209, lon:-6.8416, info:"ヨーロッパに近い地理を活かし、自動車・繊維産業の製造拠点として急成長している。リン鉱石の世界的産出国。"},
+      "ガーナ":       {lat:5.6037,  lon:-0.187,  info:"西アフリカの金・カカオ輸出国。政治的安定性から外国投資の受け入れが進む。"},
+    },
+    edges: [
+      {category:'agri', from:'ガーナ', to:'ナイジェリア', kind:'cooperation', label:'カカオ・農産物の西アフリカ域内貿易', detail:'西アフリカ経済共同体(ECOWAS)の枠組みもあり、カカオなどの農産物が両国間で取引されている。'},
+      {category:'agri', from:'ケニア', to:'南アフリカ', kind:'cooperation', label:'茶・コーヒーの輸出', detail:'ケニアは紅茶・コーヒーの輸出国として、南アフリカを含む国際市場へ供給している。'},
+      {category:'agri', from:'エチオピア', to:'ケニア', kind:'conflict', label:'コーヒー輸出市場でのシェア競合', detail:'両国はともにアフリカを代表するコーヒー輸出国で、国際市場でのシェアを競い合っている。'},
+      {category:'agri', from:'モロッコ', to:'ナイジェリア', kind:'cooperation', label:'リン鉱石肥料の供給による農業支援', detail:'世界的なリン鉱石産出国モロッコは、肥料を通じてナイジェリアなどの農業を支えている。'},
+      {category:'industry', from:'南アフリカ', to:'ナイジェリア', kind:'conflict', label:'アフリカ最大の経済大国の地位を巡る競合', detail:'鉱業国の南アフリカと産油国のナイジェリアは、しばしばアフリカ最大の経済規模の座を競い合っている。'},
+      {category:'industry', from:'モロッコ', to:'南アフリカ', kind:'cooperation', label:'自動車産業の生産拠点としての結びつき', detail:'両国はともにアフリカにおける自動車産業の生産拠点として、外国企業の投資誘致を進めている。'},
+      {category:'industry', from:'エジプト', to:'モロッコ', kind:'conflict', label:'ヨーロッパ向け製造業誘致の競合', detail:'両国はともに地理的近接性を活かしてヨーロッパ向け製造業の誘致を進め、投資獲得を競い合っている。'},
+      {category:'industry', from:'エチオピア', to:'ケニア', kind:'cooperation', label:'東アフリカの製造業・物流インフラでの協力', detail:'内陸国エチオピアは、ケニアの港湾・物流インフラを通じて製造業の輸出路を確保している。'},
+      {category:'energy', from:'ナイジェリア', to:'南アフリカ', kind:'cooperation', label:'原油の供給関係', detail:'産油国ナイジェリアは、工業国である南アフリカへも原油を供給している。'},
+      {category:'energy', from:'アルジェリア', to:'エジプト', kind:'cooperation', label:'地中海パイプラインによる天然ガス供給協力', detail:'北アフリカの両国は地中海を通じたパイプラインで、ヨーロッパ向け天然ガス輸出に協力している。'},
+      {category:'energy', from:'南アフリカ', to:'ケニア', kind:'conflict', label:'電力網整備水準の違いによる地域内格差', detail:'南アフリカは電力インフラが比較的整う一方、ケニアなど東アフリカ諸国は電力不足・停電が課題となっている。'},
+      {category:'energy', from:'ナイジェリア', to:'ガーナ', kind:'cooperation', label:'西アフリカガスパイプライン(WAGP)による供給', detail:'ナイジェリア産の天然ガスは海底パイプラインを通じてガーナなど周辺国へ供給されている。'},
+      {category:'digital', from:'ケニア', to:'南アフリカ', kind:'cooperation', label:'ICT・モバイル決済(フィンテック)分野での協力', detail:'ケニアのモバイル決済サービス「M-Pesa」の成功は、南アフリカなど他のアフリカ諸国のフィンテック産業にも影響を与えている。'},
+      {category:'digital', from:'エチオピア', to:'南アフリカ', kind:'conflict', label:'労働力・人材の流出', detail:'エチオピアの高学歴人材が、より高い賃金を求めて南アフリカなど経済的に発展した国へ流出する傾向がある。'},
+      {category:'digital', from:'ナイジェリア', to:'南アフリカ', kind:'conflict', label:'出稼ぎ労働者・資本の移動を巡る緊張', detail:'ナイジェリア人を含む移民労働者の増加に対し、南アフリカ国内で排外主義的な緊張が生じることがある。'},
+      {category:'digital', from:'エジプト', to:'南アフリカ', kind:'cooperation', label:'AU内での外交・安全保障分野での連携', detail:'アフリカ連合(AU)の主要加盟国として、両国は外交・安全保障分野での連携を強めている。'},
+    ],
+  },
 };
 
 /* ===== 危機管理モード:10ルートの出発地・脱出地(直線補間で6関門を概算配置) ===== */
@@ -1058,7 +1200,7 @@ function renderOrgNote(homeName, home, partnerName, partner){
 /* ===== 組織ネットワーク図の描画(交渉モード限定・危機管理モードには一切触れない) ===== */
 window.orgNetworkLayers = [];
 let orgNetworkActiveCategory = 'all';
-let orgNetworkActiveOrg = null; // 'EU' | 'ASEAN' | 'USMCA' | 'MERCOSUR' | null
+let orgNetworkActiveOrg = null; // 'EU' | 'ASEAN' | 'USMCA' | 'MERCOSUR' | 'OPEC' | 'OAPEC' | 'APEC' | 'AU' | null
 function clearOrgNetwork(){
   window.orgNetworkLayers.forEach(l=>l.remove());
   window.orgNetworkLayers = [];
@@ -1101,8 +1243,10 @@ function drawOrgNetwork(orgKey, categoryKey){
     line.bindPopup(`<b>${e.from} → ${e.to}</b>(${e.kind==='conflict' ? '依存・競合・対立' : '協力・供給'})<br>${e.label}<br><span style="color:var(--ink-dim);font-size:.85em;">${e.detail}</span>`);
     window.orgNetworkLayers.push(line);
   });
+  // 通常の国選択(flyTo)と同じ滑らかなカメラ移動にすることで、「普通の地図」と
+  // 組織ネットワーク表示の切り替えが地続きに見えるようにする(fitBoundsだと瞬間移動になる)。
   const bounds = L.latLngBounds(Object.values(net.countries).map(c=>[c.lat,c.lon]));
-  window.worldMap.fitBounds(bounds, {padding:[40,40]});
+  window.worldMap.flyToBounds(bounds, {padding:[40,40], duration:1.0});
 }
 function showOrgNetwork(orgKey){
   orgNetworkActiveOrg = orgKey;
@@ -1123,8 +1267,8 @@ function render(){
   const home = COUNTRY_MAP[homeName];
   const partner = COUNTRY_MAP[partnerName];
 
-  // 相手国がEU/ASEAN/USMCA/MERCOSURの時だけ、通常の1地点表示の代わりに
-  // 加盟国間の関係ネットワーク図を出す。危機管理モードではこの分岐自体に入らない
+  // 相手国がEU/ASEAN/USMCA/MERCOSUR/OPEC/OAPEC/APEC/AUの時だけ、通常の1地点表示の
+  // 代わりに加盟国間の関係ネットワーク図を出す。危機管理モードではこの分岐自体に入らない
   // (render()はnegoモードでしか呼ばれない)。
   if(currentMode === 'nego' && ORG_NETWORKS[partnerName]){
     statusEl.textContent = '';
