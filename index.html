@@ -490,22 +490,12 @@ COUNTRY_DB.forEach(c=>{
   };
 });
 
-/* ===== 交渉モード:相手国が「EU」の時だけ出す、加盟国間の関係性ネットワーク図 =====
-   対象はGDP上位9か国。関係性データは授業用の概要レベル(代表的・典型的な関係を分かり
-   やすく要約したもの)であり、精密な統計値そのものではない。危機管理モードには一切
-   関与しない(render()内でcurrentMode==='nego'の時だけ呼び出す)。 */
-const EU_NETWORK_COUNTRIES = {
-  "ドイツ":     {lat:52.52,   lon:13.405, info:"EU最大の経済大国・人口大国。自動車・機械工業の中心で「欧州の工場」とも呼ばれる。輸出依存度が高く、部品・資源・労働力の多くを近隣国からの供給に頼る。"},
-  "フランス":   {lat:48.8566, lon:2.3522, info:"EU第2位の経済大国。原子力発電による電力輸出国で、EU共通農業政策(CAP)の最大の受益国の一つ。航空・防衛産業でドイツと協力関係にある。"},
-  "イタリア":   {lat:41.9028, lon:12.4964,info:"製造業・ファッション・食品産業が強み。北部の工業地帯と南部の農業地帯で国内の経済格差が大きい。"},
-  "スペイン":   {lat:40.4168, lon:-3.7038,info:"地中海式農業による果物・野菜の輸出大国。太陽光・風力など再生可能エネルギーの導入も進む。南欧の若年層は雇用を求め北欧・西欧へ移動する傾向がある。"},
-  "オランダ":   {lat:52.3676, lon:4.9041, info:"国土は小さいが施設園芸技術により世界第2位の農産物輸出国。ロッテルダム港を中心に欧州の物流拠点としての役割も大きい。"},
-  "ポーランド": {lat:52.2297, lon:21.0122,info:"2004年のEU拡大以降、安価な労働力と製造拠点として西欧(特にドイツ)の自動車・家電産業のサプライチェーンに深く組み込まれている。石炭火力への依存度が高く、脱炭素政策を巡りEUと摩擦がある。"},
-  "ベルギー":   {lat:50.8503, lon:4.3517, info:"EU本部が置かれる「EUの首都」。アントウェルペン港を中心に化学工業・物流が発達し、周辺国への中継拠点としての役割を持つ。"},
-  "スウェーデン":{lat:59.3293,lon:18.0686,info:"水力・風力など再生可能エネルギー比率が高い環境先進国。ICT産業も発達し、デジタル分野でEUをリードする。"},
-  "アイルランド":{lat:53.3498,lon:-6.2603,info:"法人税率の低さからGoogleやAppleなど米国巨大IT企業の欧州拠点が集中するデジタル経済の中心地。一方で法人税を巡り他のEU加盟国と摩擦もある。"},
-};
-const EU_NETWORK_CATEGORIES = [
+/* ===== 交渉モード:相手国が国際組織(EU/ASEAN/USMCA/MERCOSUR)の時だけ出す、
+   加盟国間の関係性ネットワーク図 =====
+   関係性データは授業用の概要レベル(代表的・典型的な関係を分かりやすく要約したもの)
+   であり、精密な統計値そのものではない。危機管理モードには一切関与しない
+   (render()内でcurrentMode==='nego'の時だけ呼び出す)。 */
+const ORG_NETWORK_CATEGORIES = [
   {key:'all',      label:'全体'},
   {key:'agri',     label:'🌾 農業・食品'},
   {key:'industry', label:'🚗 工業'},
@@ -513,32 +503,121 @@ const EU_NETWORK_CATEGORIES = [
   {key:'digital',  label:'💻 デジタル・人の移動'},
 ];
 // kind: 'cooperation'(協力・供給)または 'conflict'(依存・競合・対立)。色分けして表示する。
-const EU_NETWORK_EDGES = [
-  {category:'agri', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'花き・乳製品・園芸作物を供給', detail:'オランダは国土が小さいながら施設園芸技術により世界第2位の農産物輸出国。地理的に近いドイツへ大量に出荷している。'},
-  {category:'agri', from:'オランダ', to:'フランス', kind:'cooperation', label:'農産物の輸出', detail:'オランダは園芸作物や乳製品をフランスへも供給しており、EU域内の農産物物流網の要となっている。'},
-  {category:'agri', from:'ポーランド', to:'ドイツ', kind:'cooperation', label:'食肉・果物・農業労働力を供給', detail:'EU拡大以降、ポーランドは安価な農産物と季節労働力をドイツへ供給する重要な供給国になっている。'},
-  {category:'agri', from:'スペイン', to:'ドイツ', kind:'cooperation', label:'果物・野菜(地中海式農業)を供給', detail:'地中海性気候を活かした果樹・野菜栽培が盛んで、年間を通じて北欧・中欧へ出荷している。'},
-  {category:'agri', from:'フランス', to:'イタリア', kind:'conflict', label:'EU共通農業政策(CAP)予算を巡る競合', detail:'ともにEU最大級の農業国であり、EU予算(CAP)の配分や農産物輸出でしばしば利害が対立する。'},
+const ORG_NETWORK_EDGE_COLORS = { cooperation:'#5fae6b', conflict:'#c9603a' };
 
-  {category:'industry', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'自動車部品・製造拠点としての依存', detail:'ドイツの自動車・機械メーカーは人件費の安いポーランドの工場に部品生産や組立を委託しており、サプライチェーン上の依存関係が強い。'},
-  {category:'industry', from:'ドイツ', to:'フランス', kind:'cooperation', label:'航空機産業(エアバス)での協力', detail:'ドイツ・フランスは共同でエアバス社を運営するなど、航空・防衛産業で協力関係にある。'},
-  {category:'industry', from:'フランス', to:'スペイン', kind:'cooperation', label:'自動車産業の工場展開', detail:'フランスの自動車メーカーがスペインに多くの生産拠点を持ち、両国の製造業は密接に結びついている。'},
-  {category:'industry', from:'ベルギー', to:'ドイツ', kind:'cooperation', label:'アントウェルペン港を通じた物流供給', detail:'ベルギーのアントウェルペン港は欧州有数のコンテナ港で、ドイツ工業地帯への原材料・製品の中継拠点となっている。'},
-  {category:'industry', from:'イタリア', to:'ドイツ', kind:'conflict', label:'機械・工業製品の輸出で競合', detail:'イタリア北部とドイツはともに高度な機械工業を持ち、世界市場で輸出を競い合う関係にある。'},
-
-  {category:'energy', from:'フランス', to:'ドイツ', kind:'cooperation', label:'原子力発電による電力供給', detail:'フランスは原子力発電の比率が高く、電力網を通じてドイツなど近隣国へ電力を輸出している。'},
-  {category:'energy', from:'ドイツ', to:'ポーランド', kind:'conflict', label:'脱炭素政策を巡る対立', detail:'ドイツが石炭火力からの脱却を急ぐ一方、ポーランドは電力の多くを石炭に依存しており、EUの気候変動対策を巡って立場の違いが目立つ。'},
-  {category:'energy', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'北海の洋上風力・水素事業での協力', detail:'両国は北海における洋上風力発電や水素エネルギーの共同開発を進めている。'},
-  {category:'energy', from:'スウェーデン', to:'ドイツ', kind:'cooperation', label:'再生可能エネルギー技術の供給', detail:'水力・風力発電の先進国であるスウェーデンは、グリーン技術の分野でEU内をリードしている。'},
-  {category:'energy', from:'スペイン', to:'フランス', kind:'cooperation', label:'太陽光発電による電力供給の拡大', detail:'スペインは太陽光発電の導入が進み、送電網を通じてフランスなど近隣国への電力供給の拡大が期待されている。'},
-
-  {category:'digital', from:'アイルランド', to:'ドイツ', kind:'cooperation', label:'米国IT企業の欧州拠点としての存在感', detail:'アイルランドは法人税率の低さからGoogleやApple等の欧州本社が集中し、EU全体のデジタル経済を支えている。'},
-  {category:'digital', from:'アイルランド', to:'フランス', kind:'conflict', label:'法人税率を巡る摩擦', detail:'アイルランドの低い法人税率は他のEU加盟国(特にフランス)から「租税競争」として批判されることがある。'},
-  {category:'digital', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'労働力・人材の西欧への移動', detail:'ポーランドから多くの労働者がより高い賃金を求めてドイツなど西欧諸国へ移住しており、送り出し側は人材流出という課題を抱える。'},
-  {category:'digital', from:'スペイン', to:'ドイツ', kind:'conflict', label:'若年層の雇用を求めた移動', detail:'南欧は若年失業率が高く、スペインの若者が雇用機会を求めてドイツなど北欧・西欧へ移住する傾向がある。'},
-  {category:'digital', from:'ドイツ', to:'フランス', kind:'cooperation', label:'EUデジタル規制のルール作りで協力', detail:'GDPR(一般データ保護規則)やデジタル市場法など、EUのデジタル分野のルール形成でドイツ・フランスが主導的役割を果たしている。'},
-];
-const EU_NETWORK_EDGE_COLORS = { cooperation:'#5fae6b', conflict:'#c9603a' };
+const ORG_NETWORKS = {
+  // EU: GDP上位9か国
+  EU: {
+    countries: {
+      "ドイツ":     {lat:52.52,   lon:13.405, info:"EU最大の経済大国・人口大国。自動車・機械工業の中心で「欧州の工場」とも呼ばれる。輸出依存度が高く、部品・資源・労働力の多くを近隣国からの供給に頼る。"},
+      "フランス":   {lat:48.8566, lon:2.3522, info:"EU第2位の経済大国。原子力発電による電力輸出国で、EU共通農業政策(CAP)の最大の受益国の一つ。航空・防衛産業でドイツと協力関係にある。"},
+      "イタリア":   {lat:41.9028, lon:12.4964,info:"製造業・ファッション・食品産業が強み。北部の工業地帯と南部の農業地帯で国内の経済格差が大きい。"},
+      "スペイン":   {lat:40.4168, lon:-3.7038,info:"地中海式農業による果物・野菜の輸出大国。太陽光・風力など再生可能エネルギーの導入も進む。南欧の若年層は雇用を求め北欧・西欧へ移動する傾向がある。"},
+      "オランダ":   {lat:52.3676, lon:4.9041, info:"国土は小さいが施設園芸技術により世界第2位の農産物輸出国。ロッテルダム港を中心に欧州の物流拠点としての役割も大きい。"},
+      "ポーランド": {lat:52.2297, lon:21.0122,info:"2004年のEU拡大以降、安価な労働力と製造拠点として西欧(特にドイツ)の自動車・家電産業のサプライチェーンに深く組み込まれている。石炭火力への依存度が高く、脱炭素政策を巡りEUと摩擦がある。"},
+      "ベルギー":   {lat:50.8503, lon:4.3517, info:"EU本部が置かれる「EUの首都」。アントウェルペン港を中心に化学工業・物流が発達し、周辺国への中継拠点としての役割を持つ。"},
+      "スウェーデン":{lat:59.3293,lon:18.0686,info:"水力・風力など再生可能エネルギー比率が高い環境先進国。ICT産業も発達し、デジタル分野でEUをリードする。"},
+      "アイルランド":{lat:53.3498,lon:-6.2603,info:"法人税率の低さからGoogleやAppleなど米国巨大IT企業の欧州拠点が集中するデジタル経済の中心地。一方で法人税を巡り他のEU加盟国と摩擦もある。"},
+    },
+    edges: [
+      {category:'agri', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'花き・乳製品・園芸作物を供給', detail:'オランダは国土が小さいながら施設園芸技術により世界第2位の農産物輸出国。地理的に近いドイツへ大量に出荷している。'},
+      {category:'agri', from:'オランダ', to:'フランス', kind:'cooperation', label:'農産物の輸出', detail:'オランダは園芸作物や乳製品をフランスへも供給しており、EU域内の農産物物流網の要となっている。'},
+      {category:'agri', from:'ポーランド', to:'ドイツ', kind:'cooperation', label:'食肉・果物・農業労働力を供給', detail:'EU拡大以降、ポーランドは安価な農産物と季節労働力をドイツへ供給する重要な供給国になっている。'},
+      {category:'agri', from:'スペイン', to:'ドイツ', kind:'cooperation', label:'果物・野菜(地中海式農業)を供給', detail:'地中海性気候を活かした果樹・野菜栽培が盛んで、年間を通じて北欧・中欧へ出荷している。'},
+      {category:'agri', from:'フランス', to:'イタリア', kind:'conflict', label:'EU共通農業政策(CAP)予算を巡る競合', detail:'ともにEU最大級の農業国であり、EU予算(CAP)の配分や農産物輸出でしばしば利害が対立する。'},
+      {category:'industry', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'自動車部品・製造拠点としての依存', detail:'ドイツの自動車・機械メーカーは人件費の安いポーランドの工場に部品生産や組立を委託しており、サプライチェーン上の依存関係が強い。'},
+      {category:'industry', from:'ドイツ', to:'フランス', kind:'cooperation', label:'航空機産業(エアバス)での協力', detail:'ドイツ・フランスは共同でエアバス社を運営するなど、航空・防衛産業で協力関係にある。'},
+      {category:'industry', from:'フランス', to:'スペイン', kind:'cooperation', label:'自動車産業の工場展開', detail:'フランスの自動車メーカーがスペインに多くの生産拠点を持ち、両国の製造業は密接に結びついている。'},
+      {category:'industry', from:'ベルギー', to:'ドイツ', kind:'cooperation', label:'アントウェルペン港を通じた物流供給', detail:'ベルギーのアントウェルペン港は欧州有数のコンテナ港で、ドイツ工業地帯への原材料・製品の中継拠点となっている。'},
+      {category:'industry', from:'イタリア', to:'ドイツ', kind:'conflict', label:'機械・工業製品の輸出で競合', detail:'イタリア北部とドイツはともに高度な機械工業を持ち、世界市場で輸出を競い合う関係にある。'},
+      {category:'energy', from:'フランス', to:'ドイツ', kind:'cooperation', label:'原子力発電による電力供給', detail:'フランスは原子力発電の比率が高く、電力網を通じてドイツなど近隣国へ電力を輸出している。'},
+      {category:'energy', from:'ドイツ', to:'ポーランド', kind:'conflict', label:'脱炭素政策を巡る対立', detail:'ドイツが石炭火力からの脱却を急ぐ一方、ポーランドは電力の多くを石炭に依存しており、EUの気候変動対策を巡って立場の違いが目立つ。'},
+      {category:'energy', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'北海の洋上風力・水素事業での協力', detail:'両国は北海における洋上風力発電や水素エネルギーの共同開発を進めている。'},
+      {category:'energy', from:'スウェーデン', to:'ドイツ', kind:'cooperation', label:'再生可能エネルギー技術の供給', detail:'水力・風力発電の先進国であるスウェーデンは、グリーン技術の分野でEU内をリードしている。'},
+      {category:'energy', from:'スペイン', to:'フランス', kind:'cooperation', label:'太陽光発電による電力供給の拡大', detail:'スペインは太陽光発電の導入が進み、送電網を通じてフランスなど近隣国への電力供給の拡大が期待されている。'},
+      {category:'digital', from:'アイルランド', to:'ドイツ', kind:'cooperation', label:'米国IT企業の欧州拠点としての存在感', detail:'アイルランドは法人税率の低さからGoogleやApple等の欧州本社が集中し、EU全体のデジタル経済を支えている。'},
+      {category:'digital', from:'アイルランド', to:'フランス', kind:'conflict', label:'法人税率を巡る摩擦', detail:'アイルランドの低い法人税率は他のEU加盟国(特にフランス)から「租税競争」として批判されることがある。'},
+      {category:'digital', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'労働力・人材の西欧への移動', detail:'ポーランドから多くの労働者がより高い賃金を求めてドイツなど西欧諸国へ移住しており、送り出し側は人材流出という課題を抱える。'},
+      {category:'digital', from:'スペイン', to:'ドイツ', kind:'conflict', label:'若年層の雇用を求めた移動', detail:'南欧は若年失業率が高く、スペインの若者が雇用機会を求めてドイツなど北欧・西欧へ移住する傾向がある。'},
+      {category:'digital', from:'ドイツ', to:'フランス', kind:'cooperation', label:'EUデジタル規制のルール作りで協力', detail:'GDPR(一般データ保護規則)やデジタル市場法など、EUのデジタル分野のルール形成でドイツ・フランスが主導的役割を果たしている。'},
+    ],
+  },
+  // ASEAN: 加盟10か国すべて
+  ASEAN: {
+    countries: {
+      "インドネシア":{lat:-6.2088, lon:106.8456,info:"ASEAN最大の人口・経済規模を持つ盟主的存在。ニッケルなど鉱物資源が豊富で、近年は電気自動車用電池産業の誘致に力を入れる。"},
+      "タイ":       {lat:13.7563, lon:100.5018,info:"東南アジア有数の自動車製造拠点(「アジアのデトロイト」)。農産物(米・天然ゴム)の輸出国でもある。"},
+      "ベトナム":   {lat:21.0278, lon:105.8342,info:"近年「チャイナ・プラス・ワン」の受け皿として製造業の工場移転が急増。電子機器の輸出が急成長している。"},
+      "マレーシア": {lat:3.139,   lon:101.6869,info:"天然ゴム・パーム油の一大生産国。半導体の後工程(組立・検査)で世界的なシェアを持つ。"},
+      "フィリピン": {lat:14.5995, lon:120.9842,info:"英語人口が多く、コールセンターなどICTアウトソーシング産業が発達。海外出稼ぎ労働者(OFW)からの送金が経済を支える。"},
+      "シンガポール":{lat:1.3521, lon:103.8198,info:"ASEAN随一の金融・物流ハブ。一人当たりGDPが突出して高く、地域の資本・情報が集まる結節点。"},
+      "ミャンマー": {lat:19.7633, lon:96.0785, info:"天然ガスなど資源国。2021年の軍事クーデター以降、政情不安により外国投資が停滞している。"},
+      "カンボジア": {lat:11.5564, lon:104.9282,info:"縫製業を中心とした労働集約型の軽工業が主力。近年は中国からの投資・観光客が急増。"},
+      "ラオス":     {lat:17.9757, lon:102.6331,info:"内陸国で水力発電が豊富、「東南アジアのバッテリー」として近隣国へ電力を輸出する。"},
+      "ブルネイ":   {lat:4.9031,  lon:114.9398,info:"石油・天然ガス資源に依存する小国。ASEANの中でも際立って資源依存度が高い。"},
+    },
+    edges: [
+      {category:'agri', from:'タイ', to:'マレーシア', kind:'cooperation', label:'米・天然ゴムの供給', detail:'タイは世界有数の米・天然ゴム輸出国で、ASEAN域内外へ安定供給している。'},
+      {category:'agri', from:'ベトナム', to:'フィリピン', kind:'cooperation', label:'米の輸出', detail:'ベトナムは世界有数の米輸出国で、自給率の低いフィリピンへ安定的に供給している。'},
+      {category:'agri', from:'インドネシア', to:'マレーシア', kind:'conflict', label:'パーム油輸出を巡る競合', detail:'両国で世界のパーム油生産の大半を占め、国際市場でのシェアを競い合っている。'},
+      {category:'agri', from:'ミャンマー', to:'タイ', kind:'conflict', label:'農業・漁業労働力の供給', detail:'ミャンマーから多くの出稼ぎ労働者がタイの農業・水産業の現場を支えている。'},
+      {category:'agri', from:'カンボジア', to:'ベトナム', kind:'cooperation', label:'米・農産物の輸出入', detail:'メコン川流域でつながる両国は、米を中心に農産物の貿易が盛んである。'},
+      {category:'industry', from:'ベトナム', to:'シンガポール', kind:'cooperation', label:'製造業投資・金融面での結びつき', detail:'シンガポールの資本・金融機能を介して、ベトナムへの製造業投資(「チャイナ・プラス・ワン」)が進んでいる。'},
+      {category:'industry', from:'タイ', to:'マレーシア', kind:'conflict', label:'自動車・電子部品産業で競合', detail:'両国はASEANの製造業拠点としての地位を競い合っており、外国企業誘致で競合関係にある。'},
+      {category:'industry', from:'カンボジア', to:'タイ', kind:'conflict', label:'縫製業の原材料・部品供給への依存', detail:'カンボジアの縫製産業は、タイなど近隣国からの原材料・部品供給に依存している部分が大きい。'},
+      {category:'industry', from:'マレーシア', to:'シンガポール', kind:'cooperation', label:'半導体サプライチェーンでの協力', detail:'マレーシアの半導体後工程(組立・検査)とシンガポールの設計・金融機能が密接に連携している。'},
+      {category:'industry', from:'ラオス', to:'ベトナム', kind:'conflict', label:'内陸国としての輸送路依存', detail:'内陸国ラオスは、海への輸送路としてベトナムの港湾インフラに依存している。'},
+      {category:'energy', from:'ラオス', to:'タイ', kind:'cooperation', label:'水力発電による電力輸出', detail:'ラオスは「東南アジアのバッテリー」と呼ばれ、メコン川の水力発電による電力をタイなど近隣国へ輸出している。'},
+      {category:'energy', from:'ブルネイ', to:'フィリピン', kind:'cooperation', label:'天然ガス・LNGの供給', detail:'ブルネイは豊富な天然ガス資源を背景に、LNG(液化天然ガス)を域内外へ輸出している。'},
+      {category:'energy', from:'ミャンマー', to:'タイ', kind:'cooperation', label:'天然ガスパイプラインによる供給', detail:'ミャンマー沖の天然ガス田からタイへパイプラインで供給されており、タイの電力の重要な供給源となっている。'},
+      {category:'energy', from:'インドネシア', to:'フィリピン', kind:'conflict', label:'石炭・鉱物資源の輸出で競合', detail:'両国は石炭・ニッケルなど資源輸出国として、国際市場でシェアを競い合っている。'},
+      {category:'energy', from:'ベトナム', to:'シンガポール', kind:'conflict', label:'南シナ海の資源開発を巡る緊張', detail:'南シナ海の石油・天然ガス資源や漁業権を巡り、ASEAN域内でも立場の違いが生じることがある。'},
+      {category:'digital', from:'フィリピン', to:'シンガポール', kind:'cooperation', label:'ICT人材・アウトソーシング産業での結びつき', detail:'フィリピンは英語人口の多さを活かしたコールセンター産業が発達し、シンガポールの金融・IT企業とも連携している。'},
+      {category:'digital', from:'ミャンマー', to:'タイ', kind:'conflict', label:'出稼ぎ労働者の送出', detail:'政情不安の続くミャンマーから、多くの労働者が職を求めてタイへ移動している。'},
+      {category:'digital', from:'カンボジア', to:'タイ', kind:'conflict', label:'出稼ぎ労働者の送出', detail:'カンボジアからも多くの労働者が、より高い賃金を求めてタイへ移住している。'},
+      {category:'digital', from:'シンガポール', to:'インドネシア', kind:'cooperation', label:'ASEANのデジタル経済圏構想での協力', detail:'シンガポールの資本・技術とインドネシアの巨大な人口・市場が組み合わさり、東南アジアのデジタル経済圏を牽引している。'},
+      {category:'digital', from:'フィリピン', to:'ベトナム', kind:'conflict', label:'ICT・製造業における投資誘致競合', detail:'両国はともに若い労働力を強みに外国企業の投資誘致を競い合っている。'},
+    ],
+  },
+  // USMCA: 米加墨3か国
+  USMCA: {
+    countries: {
+      "アメリカ": {lat:38.9072, lon:-77.0369, info:"世界最大の経済大国で北米市場の中心。製造業のサプライチェーンでメキシコ・カナダと深く結びついている。"},
+      "メキシコ": {lat:19.4326, lon:-99.1332, info:"安価な労働力を背景に自動車・電子機器の組立工場(マキラドーラ)が集積し、アメリカ向け輸出の一大拠点となっている。"},
+      "カナダ":   {lat:45.4215, lon:-75.6972, info:"豊富なエネルギー資源(原油・天然ガス)を持ち、アメリカへのエネルギー輸出国。木材・農産物の輸出も盛ん。"},
+    },
+    edges: [
+      {category:'agri', from:'メキシコ', to:'アメリカ', kind:'cooperation', label:'野菜・果物の供給', detail:'メキシコは冬場でも温暖な気候を活かし、アメリカへ野菜・果物を一年中供給する重要な供給国である。'},
+      {category:'agri', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'小麦・穀物の輸出', detail:'カナダは広大な農地を活かした穀物輸出国で、アメリカへも大量の小麦・大豆を供給している。'},
+      {category:'industry', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'自動車組立工場(マキラドーラ)としての依存', detail:'アメリカ系自動車メーカーはメキシコ国境地帯に多くの組立工場を置き、安価な労働力に依存したサプライチェーンを築いている。'},
+      {category:'industry', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'自動車産業の部品供給網での協力', detail:'米加の自動車産業は国境をまたいで部品がやり取りされるほど一体化している。'},
+      {category:'energy', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'原油・天然ガスパイプラインによる供給', detail:'カナダは豊富な原油・天然ガス資源をパイプラインでアメリカへ輸出しており、北米のエネルギー需給を支えている。'},
+      {category:'energy', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'エネルギー政策を巡る摩擦', detail:'メキシコ政府による国営石油会社優遇策が、USMCAの公正な競争ルールと衝突するとして摩擦が生じることがある。'},
+      {category:'digital', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'労働力の越境移動', detail:'メキシコから多くの労働者が、より高い賃金を求めてアメリカへ移住している。'},
+      {category:'digital', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'ICT人材の循環', detail:'カナダはIT人材の育成に力を入れ、アメリカのテック企業とも人材交流が活発である。'},
+    ],
+  },
+  // MERCOSUR: 正規加盟4か国(アルゼンチン・ブラジル・パラグアイ・ウルグアイ)
+  MERCOSUR: {
+    countries: {
+      "アルゼンチン":{lat:-34.6037,lon:-58.3816,info:"世界有数の大豆・牛肉輸出国。パンパと呼ばれる肥沃な草原地帯で大規模な農牧業が営まれている。"},
+      "ブラジル":   {lat:-15.7939,lon:-47.8828,info:"南米最大の経済大国・人口大国。鉄鉱石などの資源と大豆・コーヒーなどの農産物輸出で世界経済に影響力を持つ。"},
+      "パラグアイ": {lat:-25.2637,lon:-57.5759,info:"内陸国で、水力発電(イタイプダム)による豊富な電力をブラジル・アルゼンチンへ輸出している。"},
+      "ウルグアイ": {lat:-34.9011,lon:-56.1645,info:"牧畜(牛肉・羊毛)が盛んな小国。政治的に安定しており、南米の金融・物流のハブとしての役割も持つ。"},
+    },
+    edges: [
+      {category:'agri', from:'アルゼンチン', to:'ブラジル', kind:'conflict', label:'大豆・穀物輸出を巡る競合', detail:'両国はともに世界有数の大豆輸出国で、国際市場でのシェアを競い合っている。'},
+      {category:'agri', from:'パラグアイ', to:'ブラジル', kind:'cooperation', label:'大豆・牛肉の輸出', detail:'内陸国パラグアイは、大豆や牛肉をブラジルの港を経由して世界へ輸出している。'},
+      {category:'agri', from:'ウルグアイ', to:'ブラジル', kind:'cooperation', label:'牛肉・羊毛の輸出', detail:'牧畜が盛んなウルグアイは、牛肉や羊毛をブラジルなど域内外へ輸出している。'},
+      {category:'industry', from:'ブラジル', to:'アルゼンチン', kind:'cooperation', label:'自動車産業の部品相互供給', detail:'ブラジル・アルゼンチンの自動車産業はメルコスールの枠組みの下で部品を相互に供給し合う分業体制を築いている。'},
+      {category:'industry', from:'パラグアイ', to:'ブラジル', kind:'conflict', label:'工業製品・海への輸送路での依存', detail:'内陸国パラグアイは、工業製品の多くをブラジル経由で輸出入しており、インフラ面での依存度が高い。'},
+      {category:'energy', from:'パラグアイ', to:'ブラジル', kind:'cooperation', label:'イタイプダムの水力発電による電力供給', detail:'両国共同運営のイタイプダムは世界有数の水力発電所で、発電量の多くをブラジルへ供給している。'},
+      {category:'energy', from:'パラグアイ', to:'アルゼンチン', kind:'cooperation', label:'水力発電による電力供給', detail:'パラグアイはヤシレタダムの電力をアルゼンチンへも供給しており、域内のエネルギー供給国となっている。'},
+      {category:'digital', from:'ウルグアイ', to:'ブラジル', kind:'cooperation', label:'金融・物流ハブとしての役割', detail:'政治的に安定したウルグアイは、南米における金融・物流の中継拠点としてブラジルなど域内と結びついている。'},
+      {category:'digital', from:'パラグアイ', to:'アルゼンチン', kind:'conflict', label:'労働力の越境移動', detail:'パラグアイから多くの人々が、より高い賃金を求めてアルゼンチンへ出稼ぎに出ている。'},
+    ],
+  },
+};
 
 /* ===== 危機管理モード:10ルートの出発地・脱出地(直線補間で6関門を概算配置) ===== */
 const CRISIS_ROUTES = {
@@ -976,61 +1055,66 @@ function renderOrgNote(homeName, home, partnerName, partner){
     note.style.display = 'none';
   }
 }
-/* ===== EUネットワーク図の描画(交渉モード限定・危機管理モードには一切触れない) ===== */
-window.euNetworkLayers = [];
-let euNetworkActiveCategory = 'all';
-function clearEUNetwork(){
-  window.euNetworkLayers.forEach(l=>l.remove());
-  window.euNetworkLayers = [];
+/* ===== 組織ネットワーク図の描画(交渉モード限定・危機管理モードには一切触れない) ===== */
+window.orgNetworkLayers = [];
+let orgNetworkActiveCategory = 'all';
+let orgNetworkActiveOrg = null; // 'EU' | 'ASEAN' | 'USMCA' | 'MERCOSUR' | null
+function clearOrgNetwork(){
+  window.orgNetworkLayers.forEach(l=>l.remove());
+  window.orgNetworkLayers = [];
 }
-function buildEUNetworkTabsOnce(){
+function buildOrgNetworkTabsOnce(){
   const bar = document.getElementById('euNetworkTabs');
-  if(bar.childElementCount) return; // 一度だけ組み立てる
-  EU_NETWORK_CATEGORIES.forEach((cat,i)=>{
+  if(bar.childElementCount) return; // 一度だけ組み立てる(どの組織でも同じ5タブを使い回す)
+  ORG_NETWORK_CATEGORIES.forEach(cat=>{
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'tab-btn' + (cat.key === euNetworkActiveCategory ? ' active' : '');
+    btn.className = 'tab-btn' + (cat.key === orgNetworkActiveCategory ? ' active' : '');
     btn.textContent = cat.label;
     btn.addEventListener('click', ()=>{
       bar.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      euNetworkActiveCategory = cat.key;
-      drawEUNetwork(cat.key);
+      orgNetworkActiveCategory = cat.key;
+      drawOrgNetwork(orgNetworkActiveOrg, cat.key);
     });
     bar.appendChild(btn);
   });
 }
-function drawEUNetwork(categoryKey){
-  clearEUNetwork();
-  Object.entries(EU_NETWORK_COUNTRIES).forEach(([name,c])=>{
+function drawOrgNetwork(orgKey, categoryKey){
+  clearOrgNetwork();
+  const net = ORG_NETWORKS[orgKey];
+  if(!net) return;
+  Object.entries(net.countries).forEach(([name,c])=>{
     const marker = L.circleMarker([c.lat,c.lon], {radius:8, color:'#8c2f39', fillColor:'#e8e1cf', fillOpacity:1, weight:2}).addTo(window.worldMap);
     marker.bindTooltip(name, {permanent:true, direction:'top', offset:[0,-6], className:'eu-net-label'});
     marker.bindPopup(`<b>${name}</b><br>${c.info}`);
-    window.euNetworkLayers.push(marker);
+    window.orgNetworkLayers.push(marker);
   });
-  const edges = EU_NETWORK_EDGES.filter(e => categoryKey === 'all' || e.category === categoryKey);
+  const edges = net.edges.filter(e => categoryKey === 'all' || e.category === categoryKey);
   edges.forEach(e=>{
-    const from = EU_NETWORK_COUNTRIES[e.from], to = EU_NETWORK_COUNTRIES[e.to];
+    const from = net.countries[e.from], to = net.countries[e.to];
     if(!from || !to) return;
-    const color = EU_NETWORK_EDGE_COLORS[e.kind] || '#999';
+    const color = ORG_NETWORK_EDGE_COLORS[e.kind] || '#999';
     const line = L.polyline([[from.lat,from.lon],[to.lat,to.lon]], {
       color, weight:3, opacity:0.85, dashArray: e.kind==='conflict' ? '6,5' : null
     }).addTo(window.worldMap);
     line.bindPopup(`<b>${e.from} → ${e.to}</b>(${e.kind==='conflict' ? '依存・競合・対立' : '協力・供給'})<br>${e.label}<br><span style="color:var(--ink-dim);font-size:.85em;">${e.detail}</span>`);
-    window.euNetworkLayers.push(line);
+    window.orgNetworkLayers.push(line);
   });
-  const bounds = L.latLngBounds(Object.values(EU_NETWORK_COUNTRIES).map(c=>[c.lat,c.lon]));
+  const bounds = L.latLngBounds(Object.values(net.countries).map(c=>[c.lat,c.lon]));
   window.worldMap.fitBounds(bounds, {padding:[40,40]});
 }
-function showEUNetwork(){
-  buildEUNetworkTabsOnce();
+function showOrgNetwork(orgKey){
+  orgNetworkActiveOrg = orgKey;
+  buildOrgNetworkTabsOnce();
   document.getElementById('euNetworkTabs').style.display = 'flex';
   if(window.mapMarker){ window.mapMarker.remove(); window.mapMarker = null; }
-  drawEUNetwork(euNetworkActiveCategory);
+  drawOrgNetwork(orgKey, orgNetworkActiveCategory);
 }
-function hideEUNetwork(){
+function hideOrgNetwork(){
+  orgNetworkActiveOrg = null;
   document.getElementById('euNetworkTabs').style.display = 'none';
-  clearEUNetwork();
+  clearOrgNetwork();
 }
 
 function render(){
@@ -1039,13 +1123,14 @@ function render(){
   const home = COUNTRY_MAP[homeName];
   const partner = COUNTRY_MAP[partnerName];
 
-  // 相手国が「EU」の時だけ、通常の1地点表示の代わりに加盟国間の関係ネットワーク図を出す。
-  // 危機管理モードではこの分岐自体に入らない(render()はnegoモードでしか呼ばれない)。
-  if(currentMode === 'nego' && partnerName === 'EU'){
+  // 相手国がEU/ASEAN/USMCA/MERCOSURの時だけ、通常の1地点表示の代わりに
+  // 加盟国間の関係ネットワーク図を出す。危機管理モードではこの分岐自体に入らない
+  // (render()はnegoモードでしか呼ばれない)。
+  if(currentMode === 'nego' && ORG_NETWORKS[partnerName]){
     statusEl.textContent = '';
-    showEUNetwork();
+    showOrgNetwork(partnerName);
   } else {
-    hideEUNetwork();
+    hideOrgNetwork();
     if(partner){
       statusEl.textContent = '';
       flyTo(partner.center, partner.zoom, partnerName);
@@ -1307,7 +1392,7 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.getElementById('customRoutePanel').style.display = (isCrisis && crisisRouteSelect.value === 'custom') ? '' : 'none';
     if(isCrisis){
       document.getElementById('geoNote').style.display = 'none';
-      hideEUNetwork();
+      hideOrgNetwork();
       if(window.routeLine){ window.routeLine.remove(); window.routeLine=null; }
       if(window.routeLineCasing){ window.routeLineCasing.remove(); window.routeLineCasing=null; }
       window.routeCpMarkers.forEach(m=>m.remove()); window.routeCpMarkers=[];
