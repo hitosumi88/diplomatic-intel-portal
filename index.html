@@ -177,6 +177,9 @@
       <span class="vs">⇄</span>
       <label>相手国</label>
       <input type="text" id="partnerInput" list="countryList" value="中国">
+      <span class="vs">+</span>
+      <label>第三国(任意)</label>
+      <input type="text" id="thirdCountryInput" list="countryList" placeholder="例:中国" style="width:110px;">
     </div>
     <div class="grp" id="crisisSelectors" style="display:none;">
       <label>舞台国(ルート)</label>
@@ -187,7 +190,7 @@
     <span id="countryStatus"></span>
     <datalist id="countryList"></datalist>
   </div>
-  <div id="orgInputHint" style="margin-top:3px;font-size:.68rem;color:var(--ink-dim);">※ EU・ASEAN・MERCOSURなどの国際組織は、英字表記(略称)で入力してください。</div>
+  <div id="orgInputHint" style="margin-top:3px;font-size:.68rem;color:var(--ink-dim);">※ EU・ASEAN・MERCOSURなどの国際組織は、英字表記(略称)で入力してください。相手国が国際組織の場合のみ、第三国欄に国名(例:中国・ロシア)を入れると関係ネットワーク図にその国も加わります(空欄可)。</div>
   <div class="mission">
     <span contenteditable="true" spellcheck="false" id="missionText">交渉・危機管理シミュレーション ‒ 登場する国はAI・教員のプロンプト次第。上の欄に打ち込めば地図・データが自動追従。</span>
     <span class="stamp">要 確認 ‒ 一次情報</span>
@@ -515,7 +518,7 @@ const ORG_NETWORK_CATEGORIES = [
 const ORG_NETWORK_EDGE_COLORS = { cooperation:'#5fae6b', conflict:'#c9603a' };
 
 const ORG_NETWORKS = {
-  // EU: GDP上位9か国 + 非加盟だが関係の深いロシア(external:trueでマーカーを区別)
+  // EU: GDP上位9か国。第三国欄に入力された国の関係データはthirdCountriesから引く。
   EU: {
     countries: {
       "ドイツ":     {lat:52.52,   lon:13.405, info:"EU最大の経済大国・人口大国。自動車・機械工業の中心で「欧州の工場」とも呼ばれる。輸出依存度が高く、部品・資源・労働力の多くを近隣国からの供給に頼る。"},
@@ -527,7 +530,30 @@ const ORG_NETWORKS = {
       "ベルギー":   {lat:50.8503, lon:4.3517, info:"EU本部が置かれる「EUの首都」。アントウェルペン港を中心に化学工業・物流が発達し、周辺国への中継拠点としての役割を持つ。"},
       "スウェーデン":{lat:59.3293,lon:18.0686,info:"水力・風力など再生可能エネルギー比率が高い環境先進国。ICT産業も発達し、デジタル分野でEUをリードする。"},
       "アイルランド":{lat:53.3498,lon:-6.2603,info:"法人税率の低さからGoogleやAppleなど米国巨大IT企業の欧州拠点が集中するデジタル経済の中心地。一方で法人税を巡り他のEU加盟国と摩擦もある。"},
-      "ロシア":     {lat:55.7558, lon:37.6173, info:"EU非加盟だが、天然ガス供給や安全保障を通じてEUと深く関わる隣国。2022年のウクライナ侵攻以降、エネルギー・経済面での関係は協力から対立へ大きく転換した。", external:true},
+    },
+    thirdCountries: {
+      "ロシア": {
+        lat:55.7558, lon:37.6173,
+        info:"EU非加盟だが、天然ガス供給や安全保障を通じてEUと深く関わる隣国。2022年のウクライナ侵攻以降、エネルギー・経済面での関係は協力から対立へ大きく転換した。",
+        edges: [
+          {category:'energy', from:'ロシア', to:'ドイツ', kind:'conflict', label:'ノルドストリームを通じた天然ガス依存とその後の断絶', detail:'ドイツは長年ロシア産天然ガスに大きく依存してきたが、2022年のロシアによるウクライナ侵攻後はノルドストリームのガス供給が止まり、調達先の見直しを迫られた。'},
+          {category:'energy', from:'ロシア', to:'ポーランド', kind:'conflict', label:'NATO東側最前線としての安全保障上の緊張', detail:'ポーランドはロシア・ベラルーシと国境を接するNATO東側の最前線国で、ウクライナ侵攻以降、加盟国の中でも安全保障上の緊張が最も高い。'},
+          {category:'industry', from:'ロシア', to:'ドイツ', kind:'conflict', label:'先端技術・半導体の禁輸措置を巡る対立', detail:'EUはロシアに対し半導体や先端技術の輸出禁止などの経済制裁を実施しており、両国の産業面での結びつきは大きく断たれている。'},
+          {category:'digital', from:'ロシア', to:'ポーランド', kind:'conflict', label:'ウクライナ避難民受け入れの最前線', detail:'ロシアによるウクライナ侵攻に伴い、隣接するポーランドは数百万人規模のウクライナ避難民を受け入れる最前線となった。'},
+          {category:'agri', from:'ロシア', to:'ドイツ', kind:'conflict', label:'穀物・肥料輸出の混乱による価格高騰', detail:'ロシアは世界有数の小麦・肥料輸出国で、ウクライナ侵攻に伴う輸出混乱はEU域内の食料・肥料価格の高騰にもつながった。'},
+        ],
+      },
+      "中国": {
+        lat:39.9042, lon:116.4074,
+        info:"EU非加盟。EUにとって最大級の貿易相手国である一方、EV(電気自動車)補助金・先端技術の輸出管理・安全保障面で摩擦が強まっている。",
+        edges: [
+          {category:'industry', from:'中国', to:'ドイツ', kind:'conflict', label:'EV(電気自動車)への相殺関税を巡る貿易摩擦', detail:'EUは中国製EVへの補助金が不公正だとして相殺関税を課し、中国もEU産品への対抗措置を検討するなど摩擦が続いている。'},
+          {category:'industry', from:'中国', to:'オランダ', kind:'conflict', label:'先端半導体製造装置の対中輸出規制', detail:'オランダの半導体製造装置大手ASMLの対中輸出は、アメリカの要請を受けたEU側の規制対象となり、米中対立の余波を受けている。'},
+          {category:'energy', from:'中国', to:'ドイツ', kind:'conflict', label:'太陽光パネル産業を巡る依存と摩擦', detail:'EUは太陽光パネルの多くを中国からの輸入に依存しており、脱炭素政策を進める上での対中依存が課題となっている。'},
+          {category:'digital', from:'中国', to:'ドイツ', kind:'conflict', label:'5G通信網におけるファーウェイ排除を巡る対立', detail:'安全保障上の懸念から、EU主要国はファーウェイ製品を5G網から排除する動きを進め、中国側は反発している。'},
+          {category:'industry', from:'中国', to:'イタリア', kind:'conflict', label:'一帯一路覚書への参加(2019年)とその後の離脱(2023年)', detail:'イタリアはG7で唯一「一帯一路」の覚書に署名したが、対中貿易赤字の拡大などを理由に2023年末に離脱を表明し、対米欧関係を重視する姿勢へ転じた。'},
+        ],
+      },
     },
     edges: [
       {category:'agri', from:'オランダ', to:'ドイツ', kind:'cooperation', label:'花き・乳製品・園芸作物を供給', detail:'オランダは国土が小さいながら施設園芸技術により世界第2位の農産物輸出国。地理的に近いドイツへ大量に出荷している。'},
@@ -550,11 +576,6 @@ const ORG_NETWORKS = {
       {category:'digital', from:'ポーランド', to:'ドイツ', kind:'conflict', label:'労働力・人材の西欧への移動', detail:'ポーランドから多くの労働者がより高い賃金を求めてドイツなど西欧諸国へ移住しており、送り出し側は人材流出という課題を抱える。'},
       {category:'digital', from:'スペイン', to:'ドイツ', kind:'conflict', label:'若年層の雇用を求めた移動', detail:'南欧は若年失業率が高く、スペインの若者が雇用機会を求めてドイツなど北欧・西欧へ移住する傾向がある。'},
       {category:'digital', from:'ドイツ', to:'フランス', kind:'cooperation', label:'EUデジタル規制のルール作りで協力', detail:'GDPR(一般データ保護規則)やデジタル市場法など、EUのデジタル分野のルール形成でドイツ・フランスが主導的役割を果たしている。'},
-      {category:'energy', from:'ロシア', to:'ドイツ', kind:'conflict', label:'ノルドストリームを通じた天然ガス依存とその後の断絶', detail:'ドイツは長年ロシア産天然ガスに大きく依存してきたが、2022年のロシアによるウクライナ侵攻後はノルドストリームのガス供給が止まり、調達先の見直しを迫られた。'},
-      {category:'energy', from:'ロシア', to:'ポーランド', kind:'conflict', label:'NATO東側最前線としての安全保障上の緊張', detail:'ポーランドはロシア・ベラルーシと国境を接するNATO東側の最前線国で、ウクライナ侵攻以降、加盟国の中でも安全保障上の緊張が最も高い。'},
-      {category:'industry', from:'ロシア', to:'ドイツ', kind:'conflict', label:'先端技術・半導体の禁輸措置を巡る対立', detail:'EUはロシアに対し半導体や先端技術の輸出禁止などの経済制裁を実施しており、両国の産業面での結びつきは大きく断たれている。'},
-      {category:'digital', from:'ロシア', to:'ポーランド', kind:'conflict', label:'ウクライナ避難民受け入れの最前線', detail:'ロシアによるウクライナ侵攻に伴い、隣接するポーランドは数百万人規模のウクライナ避難民を受け入れる最前線となった。'},
-      {category:'agri', from:'ロシア', to:'ドイツ', kind:'conflict', label:'穀物・肥料輸出の混乱による価格高騰', detail:'ロシアは世界有数の小麦・肥料輸出国で、ウクライナ侵攻に伴う輸出混乱はEU域内の食料・肥料価格の高騰にもつながった。'},
     ],
   },
   // ASEAN: 加盟10か国すべて
@@ -570,7 +591,20 @@ const ORG_NETWORKS = {
       "カンボジア": {lat:11.5564, lon:104.9282,info:"縫製業を中心とした労働集約型の軽工業が主力。近年は中国からの投資・観光客が急増。"},
       "ラオス":     {lat:17.9757, lon:102.6331,info:"内陸国で水力発電が豊富、「東南アジアのバッテリー」として近隣国へ電力を輸出する。"},
       "ブルネイ":   {lat:4.9031,  lon:114.9398,info:"石油・天然ガス資源に依存する小国。ASEANの中でも際立って資源依存度が高い。"},
-      "中国":       {lat:39.9042, lon:116.4074,info:"ASEAN非加盟だが、ASEAN最大の貿易相手国であり一帯一路構想を通じたインフラ投資を拡大している。南シナ海の領有権問題では一部加盟国と緊張関係にある。", external:true},
+    },
+    thirdCountries: {
+      "中国": {
+        lat:39.9042, lon:116.4074,
+        info:"ASEAN非加盟だが、ASEAN最大の貿易相手国であり一帯一路構想を通じたインフラ投資を拡大している。南シナ海の領有権問題では一部加盟国と緊張関係にある。",
+        edges: [
+          {category:'energy', from:'中国', to:'ベトナム', kind:'conflict', label:'南シナ海(西沙・南沙諸島)の領有権を巡る対立', detail:'中国とベトナムは南シナ海の島々や排他的経済水域(EEZ)内の資源開発を巡り、たびたび緊張が高まる。'},
+          {category:'energy', from:'中国', to:'フィリピン', kind:'conflict', label:'南シナ海(スカボロー礁等)を巡る対立', detail:'中国とフィリピンはスカボロー礁などの実効支配や漁業権を巡り、巡視船同士の衝突も起きるほど緊張が続いている。'},
+          {category:'industry', from:'中国', to:'ラオス', kind:'cooperation', label:'一帯一路による中国・ラオス鉄道建設', detail:'中国の巨額融資によって建設された中国・ラオス鉄道(2021年開通)は内陸国ラオスの物流を大きく変えた一方、対中債務の増大も課題となっている。'},
+          {category:'industry', from:'中国', to:'カンボジア', kind:'cooperation', label:'一帯一路によるインフラ投資・港湾開発', detail:'中国はカンボジアのシアヌークビル港など港湾・インフラ開発に巨額投資を行い、政治的にも最も中国に近いASEAN加盟国とされる。'},
+          {category:'digital', from:'中国', to:'インドネシア', kind:'cooperation', label:'高速鉄道(ジャカルタ・バンドン)建設での協力', detail:'中国の技術・資金によってインドネシア初の高速鉄道が建設され、両国の経済関係を象徴するプロジェクトとなった。'},
+          {category:'agri', from:'中国', to:'タイ', kind:'cooperation', label:'果物・農産物の輸出入', detail:'タイは中国向けに果物(ドリアン等)を大量に輸出しており、中国はASEAN全体にとって最大の貿易相手国となっている。'},
+        ],
+      },
     },
     edges: [
       {category:'agri', from:'タイ', to:'マレーシア', kind:'cooperation', label:'米・天然ゴムの供給', detail:'タイは世界有数の米・天然ゴム輸出国で、ASEAN域内外へ安定供給している。'},
@@ -593,12 +627,6 @@ const ORG_NETWORKS = {
       {category:'digital', from:'カンボジア', to:'タイ', kind:'conflict', label:'出稼ぎ労働者の送出', detail:'カンボジアからも多くの労働者が、より高い賃金を求めてタイへ移住している。'},
       {category:'digital', from:'シンガポール', to:'インドネシア', kind:'cooperation', label:'ASEANのデジタル経済圏構想での協力', detail:'シンガポールの資本・技術とインドネシアの巨大な人口・市場が組み合わさり、東南アジアのデジタル経済圏を牽引している。'},
       {category:'digital', from:'フィリピン', to:'ベトナム', kind:'conflict', label:'ICT・製造業における投資誘致競合', detail:'両国はともに若い労働力を強みに外国企業の投資誘致を競い合っている。'},
-      {category:'energy', from:'中国', to:'ベトナム', kind:'conflict', label:'南シナ海(西沙・南沙諸島)の領有権を巡る対立', detail:'中国とベトナムは南シナ海の島々や排他的経済水域(EEZ)内の資源開発を巡り、たびたび緊張が高まる。'},
-      {category:'energy', from:'中国', to:'フィリピン', kind:'conflict', label:'南シナ海(スカボロー礁等)を巡る対立', detail:'中国とフィリピンはスカボロー礁などの実効支配や漁業権を巡り、巡視船同士の衝突も起きるほど緊張が続いている。'},
-      {category:'industry', from:'中国', to:'ラオス', kind:'cooperation', label:'一帯一路による中国・ラオス鉄道建設', detail:'中国の巨額融資によって建設された中国・ラオス鉄道(2021年開通)は内陸国ラオスの物流を大きく変えた一方、対中債務の増大も課題となっている。'},
-      {category:'industry', from:'中国', to:'カンボジア', kind:'cooperation', label:'一帯一路によるインフラ投資・港湾開発', detail:'中国はカンボジアのシアヌークビル港など港湾・インフラ開発に巨額投資を行い、政治的にも最も中国に近いASEAN加盟国とされる。'},
-      {category:'digital', from:'中国', to:'インドネシア', kind:'cooperation', label:'高速鉄道(ジャカルタ・バンドン)建設での協力', detail:'中国の技術・資金によってインドネシア初の高速鉄道が建設され、両国の経済関係を象徴するプロジェクトとなった。'},
-      {category:'agri', from:'中国', to:'タイ', kind:'cooperation', label:'果物・農産物の輸出入', detail:'タイは中国向けに果物(ドリアン等)を大量に輸出しており、中国はASEAN全体にとって最大の貿易相手国となっている。'},
     ],
   },
   // USMCA: 米加墨3か国
@@ -607,7 +635,18 @@ const ORG_NETWORKS = {
       "アメリカ": {lat:38.9072, lon:-77.0369, info:"世界最大の経済大国で北米市場の中心。製造業のサプライチェーンでメキシコ・カナダと深く結びついている。"},
       "メキシコ": {lat:19.4326, lon:-99.1332, info:"安価な労働力を背景に自動車・電子機器の組立工場(マキラドーラ)が集積し、アメリカ向け輸出の一大拠点となっている。"},
       "カナダ":   {lat:45.4215, lon:-75.6972, info:"豊富なエネルギー資源(原油・天然ガス)を持ち、アメリカへのエネルギー輸出国。木材・農産物の輸出も盛ん。"},
-      "中国":     {lat:39.9042, lon:116.4074, info:"USMCA非加盟だが、米中貿易摩擦や対米輸出の迂回地としてのメキシコ投資を通じて、北米の通商構造に大きな影響を与えている。", external:true},
+    },
+    thirdCountries: {
+      "中国": {
+        lat:39.9042, lon:116.4074,
+        info:"USMCA非加盟だが、米中貿易摩擦や対米輸出の迂回地としてのメキシコ投資を通じて、北米の通商構造に大きな影響を与えている。",
+        edges: [
+          {category:'industry', from:'中国', to:'メキシコ', kind:'cooperation', label:'対米関税回避のための「ニアショアリング」投資', detail:'アメリカの対中関税を迂回するため、中国企業がメキシコに工場を建設し、USMCAの原産地規則を活用して対米輸出する動きが拡大している。'},
+          {category:'industry', from:'中国', to:'アメリカ', kind:'conflict', label:'貿易摩擦・関税措置を巡る対立', detail:'米中間では高関税の相互発動など、貿易戦争と呼ばれる激しい対立が続いており、USMCA全体の通商政策にも影響している。'},
+          {category:'digital', from:'中国', to:'アメリカ', kind:'conflict', label:'ハイテク・半導体分野での技術覇権競争', detail:'先端半導体の輸出規制など、米中間では次世代技術の優位性を巡る競争が激化している。'},
+          {category:'energy', from:'中国', to:'カナダ', kind:'cooperation', label:'資源(リチウム等)輸入を巡る結びつき', detail:'カナダは電気自動車用電池に必要なリチウムなどの鉱物資源を産出し、中国はその重要な輸出先・投資元となっている。'},
+        ],
+      },
     },
     edges: [
       {category:'agri', from:'メキシコ', to:'アメリカ', kind:'cooperation', label:'野菜・果物の供給', detail:'メキシコは冬場でも温暖な気候を活かし、アメリカへ野菜・果物を一年中供給する重要な供給国である。'},
@@ -618,10 +657,6 @@ const ORG_NETWORKS = {
       {category:'energy', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'エネルギー政策を巡る摩擦', detail:'メキシコ政府による国営石油会社優遇策が、USMCAの公正な競争ルールと衝突するとして摩擦が生じることがある。'},
       {category:'digital', from:'メキシコ', to:'アメリカ', kind:'conflict', label:'労働力の越境移動', detail:'メキシコから多くの労働者が、より高い賃金を求めてアメリカへ移住している。'},
       {category:'digital', from:'カナダ', to:'アメリカ', kind:'cooperation', label:'ICT人材の循環', detail:'カナダはIT人材の育成に力を入れ、アメリカのテック企業とも人材交流が活発である。'},
-      {category:'industry', from:'中国', to:'メキシコ', kind:'cooperation', label:'対米関税回避のための「ニアショアリング」投資', detail:'アメリカの対中関税を迂回するため、中国企業がメキシコに工場を建設し、USMCAの原産地規則を活用して対米輸出する動きが拡大している。'},
-      {category:'industry', from:'中国', to:'アメリカ', kind:'conflict', label:'貿易摩擦・関税措置を巡る対立', detail:'米中間では高関税の相互発動など、貿易戦争と呼ばれる激しい対立が続いており、USMCA全体の通商政策にも影響している。'},
-      {category:'digital', from:'中国', to:'アメリカ', kind:'conflict', label:'ハイテク・半導体分野での技術覇権競争', detail:'先端半導体の輸出規制など、米中間では次世代技術の優位性を巡る競争が激化している。'},
-      {category:'energy', from:'中国', to:'カナダ', kind:'cooperation', label:'資源(リチウム等)輸入を巡る結びつき', detail:'カナダは電気自動車用電池に必要なリチウムなどの鉱物資源を産出し、中国はその重要な輸出先・投資元となっている。'},
     ],
   },
   // MERCOSUR: 正規加盟4か国(アルゼンチン・ブラジル・パラグアイ・ウルグアイ)
@@ -631,7 +666,18 @@ const ORG_NETWORKS = {
       "ブラジル":   {lat:-15.7939,lon:-47.8828,info:"南米最大の経済大国・人口大国。鉄鉱石などの資源と大豆・コーヒーなどの農産物輸出で世界経済に影響力を持つ。"},
       "パラグアイ": {lat:-25.2637,lon:-57.5759,info:"内陸国で、水力発電(イタイプダム)による豊富な電力をブラジル・アルゼンチンへ輸出している。"},
       "ウルグアイ": {lat:-34.9011,lon:-56.1645,info:"牧畜(牛肉・羊毛)が盛んな小国。政治的に安定しており、南米の金融・物流のハブとしての役割も持つ。"},
-      "中国":       {lat:39.9042, lon:116.4074,info:"MERCOSUR非加盟だが、ブラジル・アルゼンチンなど域内諸国にとって最大の輸出先であり、大豆・鉄鉱石などの資源貿易で深く結びついている。", external:true},
+    },
+    thirdCountries: {
+      "中国": {
+        lat:39.9042, lon:116.4074,
+        info:"MERCOSUR非加盟だが、ブラジル・アルゼンチンなど域内諸国にとって最大の輸出先であり、大豆・鉄鉱石などの資源貿易で深く結びついている。",
+        edges: [
+          {category:'agri', from:'中国', to:'ブラジル', kind:'cooperation', label:'大豆の最大輸出先', detail:'中国はブラジル産大豆の最大の輸入国で、両国の農業貿易は世界最大規模の大豆貿易網を形成している。'},
+          {category:'agri', from:'中国', to:'アルゼンチン', kind:'cooperation', label:'大豆・牛肉の輸出先', detail:'アルゼンチンにとっても中国は大豆・牛肉の重要な輸出先であり、近年は通貨スワップ協定など金融面でも関係を深めている。'},
+          {category:'industry', from:'中国', to:'ブラジル', kind:'cooperation', label:'鉄鉱石輸出とインフラ投資', detail:'ブラジル産鉄鉱石は中国の製鉄業にとって不可欠な輸入資源であり、中国はブラジルのインフラ整備にも積極的に投資している。'},
+          {category:'digital', from:'中国', to:'ブラジル', kind:'conflict', label:'5G・通信インフラ投資を巡る欧米との綱引き', detail:'中国企業(ファーウェイ等)のブラジル5G網への参入を巡り、アメリカなど西側諸国との間で政治的な綱引きが生じている。'},
+        ],
+      },
     },
     edges: [
       {category:'agri', from:'アルゼンチン', to:'ブラジル', kind:'conflict', label:'大豆・穀物輸出を巡る競合', detail:'両国はともに世界有数の大豆輸出国で、国際市場でのシェアを競い合っている。'},
@@ -643,10 +689,6 @@ const ORG_NETWORKS = {
       {category:'energy', from:'パラグアイ', to:'アルゼンチン', kind:'cooperation', label:'水力発電による電力供給', detail:'パラグアイはヤシレタダムの電力をアルゼンチンへも供給しており、域内のエネルギー供給国となっている。'},
       {category:'digital', from:'ウルグアイ', to:'ブラジル', kind:'cooperation', label:'金融・物流ハブとしての役割', detail:'政治的に安定したウルグアイは、南米における金融・物流の中継拠点としてブラジルなど域内と結びついている。'},
       {category:'digital', from:'パラグアイ', to:'アルゼンチン', kind:'conflict', label:'労働力の越境移動', detail:'パラグアイから多くの人々が、より高い賃金を求めてアルゼンチンへ出稼ぎに出ている。'},
-      {category:'agri', from:'中国', to:'ブラジル', kind:'cooperation', label:'大豆の最大輸出先', detail:'中国はブラジル産大豆の最大の輸入国で、両国の農業貿易は世界最大規模の大豆貿易網を形成している。'},
-      {category:'agri', from:'中国', to:'アルゼンチン', kind:'cooperation', label:'大豆・牛肉の輸出先', detail:'アルゼンチンにとっても中国は大豆・牛肉の重要な輸出先であり、近年は通貨スワップ協定など金融面でも関係を深めている。'},
-      {category:'industry', from:'中国', to:'ブラジル', kind:'cooperation', label:'鉄鉱石輸出とインフラ投資', detail:'ブラジル産鉄鉱石は中国の製鉄業にとって不可欠な輸入資源であり、中国はブラジルのインフラ整備にも積極的に投資している。'},
-      {category:'digital', from:'中国', to:'ブラジル', kind:'conflict', label:'5G・通信インフラ投資を巡る欧米との綱引き', detail:'中国企業(ファーウェイ等)のブラジル5G網への参入を巡り、アメリカなど西側諸国との間で政治的な綱引きが生じている。'},
     ],
   },
   // OPEC: 加盟12か国すべて
@@ -664,7 +706,18 @@ const ORG_NETWORKS = {
       "サウジアラビア": {lat:24.7136, lon:46.6753, info:"OPEC最大の産油国で「スイングプロデューサー」として加盟国全体の生産量調整の主導役を担う。"},
       "UAE":            {lat:24.4539, lon:54.3773, info:"ドバイ・アブダビを中心に石油収入を金融・観光・物流への経済多角化に活用している。"},
       "ベネズエラ":     {lat:10.4806, lon:-66.9036,info:"世界最大級の原油埋蔵量を持つが、経済危機とアメリカの経済制裁により生産・輸出が大きく落ち込んでいる。"},
-      "アメリカ":       {lat:38.9072, lon:-77.0369, info:"OPEC非加盟だが、シェールオイル革命により世界最大の産油国となり、OPECの価格・市場支配力に大きな影響を与えている。", external:true},
+    },
+    thirdCountries: {
+      "アメリカ": {
+        lat:38.9072, lon:-77.0369,
+        info:"OPEC非加盟だが、シェールオイル革命により世界最大の産油国となり、OPECの価格・市場支配力に大きな影響を与えている。",
+        edges: [
+          {category:'energy', from:'アメリカ', to:'サウジアラビア', kind:'conflict', label:'シェールオイル革命によるOPECの市場支配力低下', detail:'2010年代以降のシェールオイル(頁岩油)革命により、アメリカは世界最大の産油国となり、OPECの価格支配力・市場シェアは相対的に低下した。'},
+          {category:'energy', from:'アメリカ', to:'イラン', kind:'conflict', label:'経済制裁による原油輸出の制限', detail:'アメリカはイランの核開発疑惑などを理由に厳しい経済制裁を科しており、イラン産原油の輸出は大きく制限されている。'},
+          {category:'energy', from:'アメリカ', to:'ベネズエラ', kind:'conflict', label:'経済制裁による原油産業の衰退', detail:'アメリカの経済制裁は国営石油会社を直撃し、ベネズエラの原油生産・輸出能力を大きく低下させた一因となっている。'},
+          {category:'digital', from:'アメリカ', to:'サウジアラビア', kind:'cooperation', label:'安全保障面での同盟関係', detail:'石油を介した安全保障協力は長年の同盟関係の基盤であり、両国の政府高官・軍関係者の往来も活発である。'},
+        ],
+      },
     },
     edges: [
       {category:'energy', from:'サウジアラビア', to:'イラン', kind:'conflict', label:'地域覇権・原油生産方針を巡る対立', detail:'スンニ派とシーア派の盟主としての対立に加え、原油の生産方針でも立場の違いが目立つ。'},
@@ -687,10 +740,6 @@ const ORG_NETWORKS = {
       {category:'digital', from:'ナイジェリア', to:'UAE', kind:'conflict', label:'資本・人材のドバイへの流出', detail:'ナイジェリアの富裕層や資本がドバイの不動産・金融市場へ流出する傾向が指摘されている。'},
       {category:'digital', from:'アルジェリア', to:'リビア', kind:'conflict', label:'労働力の越境移動と内戦による不安定化', detail:'かつてはアルジェリア人労働者がリビアの石油産業に多く流入していたが、内戦により往来が不安定になっている。'},
       {category:'agri', from:'ナイジェリア', to:'ガボン', kind:'cooperation', label:'ココア・キャッサバなど農産物の限定的な域内貿易', detail:'産油国同士で農業の規模は小さいが、西アフリカ・中部アフリカの隣国間で農産物の貿易が一部行われている。'},
-      {category:'energy', from:'アメリカ', to:'サウジアラビア', kind:'conflict', label:'シェールオイル革命によるOPECの市場支配力低下', detail:'2010年代以降のシェールオイル(頁岩油)革命により、アメリカは世界最大の産油国となり、OPECの価格支配力・市場シェアは相対的に低下した。'},
-      {category:'energy', from:'アメリカ', to:'イラン', kind:'conflict', label:'経済制裁による原油輸出の制限', detail:'アメリカはイランの核開発疑惑などを理由に厳しい経済制裁を科しており、イラン産原油の輸出は大きく制限されている。'},
-      {category:'energy', from:'アメリカ', to:'ベネズエラ', kind:'conflict', label:'経済制裁による原油産業の衰退', detail:'アメリカの経済制裁は国営石油会社を直撃し、ベネズエラの原油生産・輸出能力を大きく低下させた一因となっている。'},
-      {category:'digital', from:'アメリカ', to:'サウジアラビア', kind:'cooperation', label:'安全保障面での同盟関係', detail:'石油を介した安全保障協力は長年の同盟関係の基盤であり、両国の政府高官・軍関係者の往来も活発である。'},
     ],
   },
   // OAPEC: 加盟11か国すべて
@@ -707,7 +756,18 @@ const ORG_NETWORKS = {
       "シリア":         {lat:33.5138, lon:36.2765, info:"かつて産油国だったが、内戦により石油インフラが破壊され生産量が激減した。"},
       "チュニジア":     {lat:36.8065, lon:10.1815, info:"北アフリカの小規模産油・産ガス国。地中海を挟んだヨーロッパへの天然ガスパイプラインの中継国としての役割も持つ。"},
       "UAE":            {lat:24.4539, lon:54.3773, info:"ドバイ・アブダビを中心に石油収入を金融・観光・物流への経済多角化に活用している。"},
-      "イスラエル":     {lat:32.0853, lon:34.7818, info:"OAPEC非加盟。1973年の石油ショックの引き金となった歴史を持つ一方、近年はアブラハム合意を通じて一部のアラブ産油国と国交正常化が進んでいる。", external:true},
+    },
+    thirdCountries: {
+      "イスラエル": {
+        lat:32.0853, lon:34.7818,
+        info:"OAPEC非加盟。1973年の石油ショックの引き金となった歴史を持つ一方、近年はアブラハム合意を通じて一部のアラブ産油国と国交正常化が進んでいる。",
+        edges: [
+          {category:'energy', from:'イスラエル', to:'サウジアラビア', kind:'conflict', label:'1973年第4次中東戦争・第一次石油ショックの歴史', detail:'1973年、アラブ産油国は第4次中東戦争でイスラエルを支援した欧米諸国に対し石油禁輸を実施し、世界的な「オイルショック」を引き起こした。'},
+          {category:'digital', from:'イスラエル', to:'UAE', kind:'cooperation', label:'アブラハム合意による国交正常化(2020年)', detail:'2020年のアブラハム合意によりUAE・バーレーンはイスラエルと国交を正常化し、経済・技術分野での協力が進んでいる。'},
+          {category:'energy', from:'イスラエル', to:'エジプト', kind:'cooperation', label:'天然ガス田開発・輸出での協力', detail:'イスラエルの地中海沖ガス田(タマル・レビアタン)からエジプトのLNG施設へ天然ガスを輸出する協力関係が構築されている。'},
+          {category:'industry', from:'イスラエル', to:'シリア', kind:'conflict', label:'ゴラン高原の帰属を巡る対立', detail:'イスラエルは1967年の第三次中東戦争でシリア領ゴラン高原を占領・実効支配しており、両国間の緊張状態が続いている。'},
+        ],
+      },
     },
     edges: [
       {category:'energy', from:'サウジアラビア', to:'カタール', kind:'conflict', label:'外交路線・LNG輸出を巡る摩擦', detail:'2017年にはサウジアラビア主導でカタールとの国交が断絶するなど、政治・経済両面で摩擦が生じた。'},
@@ -730,10 +790,6 @@ const ORG_NETWORKS = {
       {category:'digital', from:'アルジェリア', to:'リビア', kind:'conflict', label:'労働力の越境移動と内戦による不安定化', detail:'かつてはアルジェリア人労働者がリビアの石油産業に多く流入していたが、内戦により往来が不安定になっている。'},
       {category:'agri', from:'エジプト', to:'チュニジア', kind:'cooperation', label:'地中海農産物(オリーブ油・柑橘類)の貿易', detail:'地中海沿岸国同士として、オリーブ油や柑橘類などの農産物貿易が行われている。'},
       {category:'agri', from:'チュニジア', to:'リビア', kind:'cooperation', label:'オリーブ油・農産物の輸出', detail:'チュニジアは世界的なオリーブ油輸出国で、隣国リビアへも農産物を供給している。'},
-      {category:'energy', from:'イスラエル', to:'サウジアラビア', kind:'conflict', label:'1973年第4次中東戦争・第一次石油ショックの歴史', detail:'1973年、アラブ産油国は第4次中東戦争でイスラエルを支援した欧米諸国に対し石油禁輸を実施し、世界的な「オイルショック」を引き起こした。'},
-      {category:'digital', from:'イスラエル', to:'UAE', kind:'cooperation', label:'アブラハム合意による国交正常化(2020年)', detail:'2020年のアブラハム合意によりUAE・バーレーンはイスラエルと国交を正常化し、経済・技術分野での協力が進んでいる。'},
-      {category:'energy', from:'イスラエル', to:'エジプト', kind:'cooperation', label:'天然ガス田開発・輸出での協力', detail:'イスラエルの地中海沖ガス田(タマル・レビアタン)からエジプトのLNG施設へ天然ガスを輸出する協力関係が構築されている。'},
-      {category:'industry', from:'イスラエル', to:'シリア', kind:'conflict', label:'ゴラン高原の帰属を巡る対立', detail:'イスラエルは1967年の第三次中東戦争でシリア領ゴラン高原を占領・実効支配しており、両国間の緊張状態が続いている。'},
     ],
   },
   // APEC: 加盟21エコノミーのうち、高校地理で扱う主要9か国に絞って表示
@@ -781,7 +837,19 @@ const ORG_NETWORKS = {
       "アルジェリア": {lat:36.7538, lon:3.0588,  info:"北アフリカ最大級の天然ガス産出国。地中海パイプラインを通じてヨーロッパへ天然ガスを輸出する重要な供給国。"},
       "モロッコ":     {lat:34.0209, lon:-6.8416, info:"ヨーロッパに近い地理を活かし、自動車・繊維産業の製造拠点として急成長している。リン鉱石の世界的産出国。"},
       "ガーナ":       {lat:5.6037,  lon:-0.187,  info:"西アフリカの金・カカオ輸出国。政治的安定性から外国投資の受け入れが進む。"},
-      "中国":         {lat:39.9042, lon:116.4074,info:"AU非加盟だが、一帯一路構想を通じてアフリカ各国のインフラ建設に巨額の融資・投資を行う最大級のパートナーとなっている。", external:true},
+    },
+    thirdCountries: {
+      "中国": {
+        lat:39.9042, lon:116.4074,
+        info:"AU非加盟だが、一帯一路構想を通じてアフリカ各国のインフラ建設に巨額の融資・投資を行う最大級のパートナーとなっている。",
+        edges: [
+          {category:'industry', from:'中国', to:'エチオピア', kind:'cooperation', label:'一帯一路による工業団地・鉄道建設', detail:'中国はエチオピアに経済特区(工業団地)やジブチへの鉄道を建設するなど、巨額のインフラ投資を行っている。'},
+          {category:'energy', from:'中国', to:'ナイジェリア', kind:'cooperation', label:'インフラ融資と引き換えの資源確保', detail:'中国はナイジェリアに鉄道・発電所建設などの融資を行う一方、見返りとして原油の安定確保を図っている。'},
+          {category:'industry', from:'中国', to:'ケニア', kind:'conflict', label:'港湾・鉄道建設を巡る「債務の罠」批判', detail:'中国の融資で建設されたモンバサ・ナイロビ間の鉄道は、返済負担の重さから「債務の罠外交」として国際的な批判を招いている。'},
+          {category:'digital', from:'中国', to:'南アフリカ', kind:'cooperation', label:'BRICSの枠組みでの連携', detail:'南アフリカは中国と共にBRICS(新興5か国)の一員として、既存の国際秩序に対抗する枠組みでの連携を強めている。'},
+          {category:'agri', from:'中国', to:'ガーナ', kind:'conflict', label:'違法な小規模金採掘(ガリムゼ)を巡る摩擦', detail:'ガーナでは中国人による違法な小規模金採掘(ガリムゼ)が環境破壊や治安悪化を招き、現地との摩擦が社会問題化している。'},
+        ],
+      },
     },
     edges: [
       {category:'agri', from:'ガーナ', to:'ナイジェリア', kind:'cooperation', label:'カカオ・農産物の西アフリカ域内貿易', detail:'西アフリカ経済共同体(ECOWAS)の枠組みもあり、カカオなどの農産物が両国間で取引されている。'},
@@ -800,11 +868,6 @@ const ORG_NETWORKS = {
       {category:'digital', from:'エチオピア', to:'南アフリカ', kind:'conflict', label:'労働力・人材の流出', detail:'エチオピアの高学歴人材が、より高い賃金を求めて南アフリカなど経済的に発展した国へ流出する傾向がある。'},
       {category:'digital', from:'ナイジェリア', to:'南アフリカ', kind:'conflict', label:'出稼ぎ労働者・資本の移動を巡る緊張', detail:'ナイジェリア人を含む移民労働者の増加に対し、南アフリカ国内で排外主義的な緊張が生じることがある。'},
       {category:'digital', from:'エジプト', to:'南アフリカ', kind:'cooperation', label:'AU内での外交・安全保障分野での連携', detail:'アフリカ連合(AU)の主要加盟国として、両国は外交・安全保障分野での連携を強めている。'},
-      {category:'industry', from:'中国', to:'エチオピア', kind:'cooperation', label:'一帯一路による工業団地・鉄道建設', detail:'中国はエチオピアに経済特区(工業団地)やジブチへの鉄道を建設するなど、巨額のインフラ投資を行っている。'},
-      {category:'energy', from:'中国', to:'ナイジェリア', kind:'cooperation', label:'インフラ融資と引き換えの資源確保', detail:'中国はナイジェリアに鉄道・発電所建設などの融資を行う一方、見返りとして原油の安定確保を図っている。'},
-      {category:'industry', from:'中国', to:'ケニア', kind:'conflict', label:'港湾・鉄道建設を巡る「債務の罠」批判', detail:'中国の融資で建設されたモンバサ・ナイロビ間の鉄道は、返済負担の重さから「債務の罠外交」として国際的な批判を招いている。'},
-      {category:'digital', from:'中国', to:'南アフリカ', kind:'cooperation', label:'BRICSの枠組みでの連携', detail:'南アフリカは中国と共にBRICS(新興5か国)の一員として、既存の国際秩序に対抗する枠組みでの連携を強めている。'},
-      {category:'agri', from:'中国', to:'ガーナ', kind:'conflict', label:'違法な小規模金採掘(ガリムゼ)を巡る摩擦', detail:'ガーナでは中国人による違法な小規模金採掘(ガリムゼ)が環境破壊や治安悪化を招き、現地との摩擦が社会問題化している。'},
     ],
   },
 };
@@ -1102,6 +1165,7 @@ const crisisCheckpointSelect = document.getElementById('crisisCheckpointSelect')
 
 const homeInput = document.getElementById('homeInput');
 const partnerInput = document.getElementById('partnerInput');
+const thirdCountryInput = document.getElementById('thirdCountryInput');
 const statusEl = document.getElementById('countryStatus');
 
 // renderFlashpoints()が交渉/危機管理どちらのモードかを判定するために参照する。
@@ -1297,6 +1361,7 @@ function renderOrgNote(homeName, home, partnerName, partner){
 window.orgNetworkLayers = [];
 let orgNetworkActiveCategory = 'all';
 let orgNetworkActiveOrg = null; // 'EU' | 'ASEAN' | 'USMCA' | 'MERCOSUR' | 'OPEC' | 'OAPEC' | 'APEC' | 'AU' | null
+let thirdCountryGeocodeSeq = 0;
 function clearOrgNetwork(){
   window.orgNetworkLayers.forEach(l=>l.remove());
   window.orgNetworkLayers = [];
@@ -1318,11 +1383,59 @@ function buildOrgNetworkTabsOnce(){
     bar.appendChild(btn);
   });
 }
+function drawExternalMarker(name, lat, lon, popupHtml, tooltipSuffix){
+  const marker = L.circleMarker([lat,lon], {
+    radius:8, color:'#5a6b7a', fillColor:'#b9c4cc', fillOpacity:1, weight:2, dashArray:'3,3',
+  }).addTo(window.worldMap);
+  marker.bindTooltip(name + tooltipSuffix, {permanent:true, direction:'top', offset:[0,-6], className:'eu-net-label'});
+  marker.bindPopup(popupHtml);
+  window.orgNetworkLayers.push(marker);
+  return marker;
+}
+// 第三国欄に、その組織向けの関係データを用意していない国名が入力された場合の処理。
+// COUNTRY_MAPに載っている国ならその場で位置を使い、載っていなければNominatimで
+// 緩く検索する(通常国選択時のgeocodeFallbackと同じ考え方)。いずれも関係性の矢印は
+// 出さず、「未収録」である旨を示すマーカーのみ地図に追加する。
+async function resolveUnknownThirdCountry(orgKey, thirdName){
+  const known = COUNTRY_MAP[thirdName];
+  const popupHtml = `<b>${thirdName}</b><br>この組織との詳細な関係データは未収録です。ニュースや資料集で個別に調べてみよう。`;
+  if(known){
+    drawExternalMarker(thirdName, known.center[0], known.center[1], popupHtml, '(関係データ未収録)');
+    return;
+  }
+  const mySeq = ++thirdCountryGeocodeSeq;
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(thirdName)}`);
+    const data = await res.json();
+    // 検索中に組織や第三国欄の内容が変わっていたら、古い結果は破棄する。
+    if(mySeq !== thirdCountryGeocodeSeq) return;
+    if(orgNetworkActiveOrg !== orgKey) return;
+    if((thirdCountryInput.value || '').trim() !== thirdName) return;
+    if(data && data[0]){
+      const marker = drawExternalMarker(thirdName, parseFloat(data[0].lat), parseFloat(data[0].lon), popupHtml, '(関係データ未収録)');
+      window.worldMap.flyToBounds(marker.getBounds ? marker.getBounds() : L.latLngBounds([marker.getLatLng(), marker.getLatLng()]).pad(3), {duration:0.8});
+    }
+  }catch(e){ /* 位置情報が取得できなくても他の表示には影響させない */ }
+}
 function drawOrgNetwork(orgKey, categoryKey){
   clearOrgNetwork();
   const net = ORG_NETWORKS[orgKey];
   if(!net) return;
-  Object.entries(net.countries).forEach(([name,c])=>{
+
+  // 第三国欄(任意)に入力された国名があれば、その組織向けに用意したthirdCountriesの
+  // データ(あれば)をノード・関係線として合流させる。未収録の国名は後段で別処理する。
+  const thirdName = (thirdCountryInput.value || '').trim();
+  const nodes = {...net.countries};
+  let edges = net.edges;
+  let thirdResolved = false;
+  if(thirdName && !net.countries[thirdName] && net.thirdCountries && net.thirdCountries[thirdName]){
+    const tc = net.thirdCountries[thirdName];
+    nodes[thirdName] = {lat:tc.lat, lon:tc.lon, info:tc.info, external:true};
+    edges = net.edges.concat(tc.edges);
+    thirdResolved = true;
+  }
+
+  Object.entries(nodes).forEach(([name,c])=>{
     // c.external: 加盟国ではないが関係が深い国(例: EUに対するロシア)を、
     // 加盟国と区別できるよう点線の縁取り・異なる配色で表示する。
     const marker = L.circleMarker([c.lat,c.lon], {
@@ -1336,9 +1449,9 @@ function drawOrgNetwork(orgKey, categoryKey){
     marker.bindPopup(`<b>${name}${c.external ? ' <span style="color:var(--ink-dim);font-size:.8em;">(非加盟国)</span>' : ''}</b><br>${c.info}`);
     window.orgNetworkLayers.push(marker);
   });
-  const edges = net.edges.filter(e => categoryKey === 'all' || e.category === categoryKey);
-  edges.forEach(e=>{
-    const from = net.countries[e.from], to = net.countries[e.to];
+  const filteredEdges = edges.filter(e => categoryKey === 'all' || e.category === categoryKey);
+  filteredEdges.forEach(e=>{
+    const from = nodes[e.from], to = nodes[e.to];
     if(!from || !to) return;
     const color = ORG_NETWORK_EDGE_COLORS[e.kind] || '#999';
     const latlngs = [[from.lat,from.lon],[to.lat,to.lon]];
@@ -1356,14 +1469,26 @@ function drawOrgNetwork(orgKey, categoryKey){
   });
   // 通常の国選択(flyTo)と同じ滑らかなカメラ移動にすることで、「普通の地図」と
   // 組織ネットワーク表示の切り替えが地続きに見えるようにする(fitBoundsだと瞬間移動になる)。
-  const bounds = L.latLngBounds(Object.values(net.countries).map(c=>[c.lat,c.lon]));
+  const bounds = L.latLngBounds(Object.values(nodes).map(c=>[c.lat,c.lon]));
   window.worldMap.flyToBounds(bounds, {padding:[40,40], duration:1.0});
+
+  if(thirdName && !thirdResolved && !net.countries[thirdName]){
+    resolveUnknownThirdCountry(orgKey, thirdName);
+  }
 }
 function showOrgNetwork(orgKey){
+  const orgChanged = orgNetworkActiveOrg !== orgKey;
   orgNetworkActiveOrg = orgKey;
   buildOrgNetworkTabsOnce();
   document.getElementById('euNetworkTabs').style.display = 'flex';
   if(window.mapMarker){ window.mapMarker.remove(); window.mapMarker = null; }
+  if(orgChanged){
+    // 組織を切り替えたときは、第三国欄をその組織の代表的な第三国(あれば)に戻す。
+    // 入力自体は常に任意で、空にすれば第三国なしで表示される。
+    const net = ORG_NETWORKS[orgKey];
+    const defaultThird = net.thirdCountries ? Object.keys(net.thirdCountries)[0] : '';
+    thirdCountryInput.value = defaultThird || '';
+  }
   drawOrgNetwork(orgKey, orgNetworkActiveCategory);
 }
 function hideOrgNetwork(){
@@ -1427,6 +1552,12 @@ function render(){
 
 homeInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); });
 partnerInput.addEventListener('change', ()=>{ render(); renderGeoNote(); renderEpaStatus(); renderFlashpoints(); renderWeather(); renderLocalNews(); });
+// 第三国欄は組織ネットワーク表示中のみ意味を持つ(通常の1国表示には影響しない)。
+thirdCountryInput.addEventListener('change', ()=>{
+  if(currentMode === 'nego' && orgNetworkActiveOrg){
+    drawOrgNetwork(orgNetworkActiveOrg, orgNetworkActiveCategory);
+  }
+});
 
 /* ===== 危機管理モード:ルート線の描画 =====
    プリセット10ルートと、生徒が自由入力する「カスタムルート」の両方を同じ
